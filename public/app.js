@@ -36,15 +36,18 @@ const updatePanel = document.querySelector("#updatePanel");
 const updateSummary = document.querySelector("#updateSummary");
 const checkUpdate = document.querySelector("#checkUpdate");
 const updateActions = document.querySelector("#updateActions");
+const accessCodeMeta = document.querySelector("#accessCodeMeta");
 const viewButtons = [...document.querySelectorAll("[data-view-target]")];
 const views = [...document.querySelectorAll("[data-view]")];
 const clipboardHistory = document.querySelector("#clipboardHistory");
+const clearClipboardHistory = document.querySelector("#clearClipboardHistory");
 const clipboardSyncToggle = document.querySelector("#clipboardSyncToggle");
 const settingClipboardSync = document.querySelector("#settingClipboardSync");
 const deviceNameInput = document.querySelector("#deviceNameInput");
 const accessLengthSetting = document.querySelector("#accessLengthSetting");
 const settingsInboxPath = document.querySelector("#settingsInboxPath");
 const copyInboxPath = document.querySelector("#copyInboxPath");
+const openInboxPath = document.querySelector("#openInboxPath");
 
 let items = [];
 let phoneUrl = location.href;
@@ -60,6 +63,7 @@ let lastAutoClipboardText = "";
 
 const settings = {
   deviceName: localStorage.getItem("lanDrop.deviceName") || "",
+  accessCodeLength: 4,
   clipboardSync: localStorage.getItem("lanDrop.clipboardSync") === "true"
 };
 
@@ -234,20 +238,60 @@ function showView(id) {
   if (id === "devicesView") loadDevices();
 }
 
+function mergeSettings(next = {}) {
+  settings.deviceName = next.deviceName || settings.deviceName || "";
+  settings.accessCodeLength = Number(next.accessCodeLength) === 6 ? 6 : 4;
+  settings.clipboardSync = Boolean(next.clipboardSync);
+}
+
+async function loadSettings() {
+  if (!isLocalAccess) return;
+  try {
+    const response = await fetch("/api/settings");
+    if (!response.ok) return;
+    const data = await response.json();
+    mergeSettings(data.settings || {});
+    if (data.accessCode) currentAccessCode = data.accessCode;
+  } catch {}
+}
+
 function applySettings() {
   if (deviceNameInput) deviceNameInput.value = settings.deviceName;
   if (clipboardSyncToggle) clipboardSyncToggle.checked = settings.clipboardSync;
   if (settingClipboardSync) settingClipboardSync.checked = settings.clipboardSync;
-  if (accessLengthSetting) accessLengthSetting.value = "4";
+  if (accessLengthSetting) accessLengthSetting.value = String(settings.accessCodeLength);
+  if (accessCodeMeta) accessCodeMeta.textContent = `${settings.accessCodeLength} 位数字`;
+  if (accessCodeValue && currentAccessCode) accessCodeValue.textContent = currentAccessCode;
   updateClipboardPolling();
 }
 
-function setClipboardSync(enabled) {
-  settings.clipboardSync = Boolean(enabled);
+async function saveSettings(partial, { announce = true } = {}) {
+  mergeSettings({ ...settings, ...partial });
+  applySettings();
   localStorage.setItem("lanDrop.clipboardSync", String(settings.clipboardSync));
-  if (clipboardSyncToggle) clipboardSyncToggle.checked = settings.clipboardSync;
-  if (settingClipboardSync) settingClipboardSync.checked = settings.clipboardSync;
-  updateClipboardPolling();
+  localStorage.setItem("lanDrop.deviceName", settings.deviceName);
+  if (!isLocalAccess) return;
+  const response = await fetch("/api/settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ settings })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "保存设置失败");
+  mergeSettings(data.settings || settings);
+  if (data.accessCode) {
+    currentAccessCode = data.accessCode;
+    accessCodeValue.textContent = currentAccessCode || "未获取";
+  }
+  applySettings();
+  if (data.codeChanged) showStatus("访问码长度已修改，旧访问码已失效", "ok");
+  else if (announce) showStatus("设置已保存", "ok");
+}
+
+function setClipboardSync(enabled) {
+  saveSettings({ clipboardSync: Boolean(enabled) }, { announce: false }).catch((error) => {
+    showStatus(error.message, "error");
+  });
 }
 
 function updateClipboardPolling() {
@@ -549,9 +593,46 @@ deviceNameInput?.addEventListener("input", () => {
   localStorage.setItem("lanDrop.deviceName", settings.deviceName);
 });
 
+deviceNameInput?.addEventListener("change", () => {
+  saveSettings({ deviceName: deviceNameInput.value.trim() }).catch((error) => {
+    showStatus(error.message, "error");
+  });
+});
+
+accessLengthSetting?.addEventListener("change", () => {
+  const nextLength = Number(accessLengthSetting.value) === 6 ? 6 : 4;
+  if (nextLength !== settings.accessCodeLength) {
+    const ok = confirm("修改访问码长度会刷新访问码，已经连接的手机需要重新输入。确定修改吗？");
+    if (!ok) {
+      accessLengthSetting.value = String(settings.accessCodeLength);
+      return;
+    }
+  }
+  saveSettings({ accessCodeLength: nextLength }).catch((error) => {
+    showStatus(error.message, "error");
+  });
+});
+
 copyInboxPath?.addEventListener("click", () => {
   if (!inboxDirectory) return showStatus("还没有读取到保存目录", "error");
   copyText(inboxDirectory, copyInboxPath);
+});
+
+openInboxPath?.addEventListener("click", async () => {
+  const response = await fetch("/api/open-inbox", { method: "POST" });
+  if (!response.ok) return showStatus("打开保存目录失败", "error");
+  flashAction(openInboxPath, "已打开");
+});
+
+clearClipboardHistory?.addEventListener("click", async () => {
+  const entries = items.filter((item) => item.type === "text" && (item.source === "clipboard" || looksLikeUrl(item.text)));
+  if (!entries.length) return showStatus("没有可清空的剪贴板历史", "info");
+  if (!confirm(`清空 ${entries.length} 条剪贴板历史？这会删除对应的文字记录。`)) return;
+  for (const item of entries) {
+    await deleteItem(item, { confirmDelete: false, announce: false });
+  }
+  render();
+  showStatus("剪贴板历史已清空", "ok");
 });
 
 async function checkForUpdates({ quiet = false } = {}) {
@@ -596,17 +677,18 @@ async function postItem(payload) {
   }
 }
 
-async function deleteItem(item) {
-  if (!confirm(`删除“${item.name || item.filename}”？`)) return;
+async function deleteItem(item, { confirmDelete = true, announce = true } = {}) {
+  if (confirmDelete && !confirm(`删除“${item.name || item.filename}”？`)) return false;
   const response = await fetch(`/api/items/${encodeURIComponent(item.id)}`, { method: "DELETE" });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     showStatus(data.error || "删除失败", "error");
-    return;
+    return false;
   }
   items = items.filter((entry) => entry.id !== item.id);
   render();
-  showStatus("已删除", "ok");
+  if (announce) showStatus("已删除", "ok");
+  return true;
 }
 
 function updateQueue() {
@@ -884,6 +966,8 @@ async function boot() {
   if (versionBadge && appVersion) versionBadge.textContent = `v${appVersion}`;
   if (updatePanel) updatePanel.hidden = !isLocalAccess;
   if (updateSummary && appVersion) updateSummary.textContent = `当前版本 v${appVersion}。点击检查更新，可直接下载最新版安装包。`;
+  mergeSettings(info.settings || {});
+  await loadSettings();
   applySettings();
   phoneUrls = info.urls || [];
   phoneUrl = phoneUrls[0] || location.href;
@@ -894,6 +978,7 @@ async function boot() {
   }
   currentAccessCode = info.accessCode || "";
   accessCodeValue.textContent = currentAccessCode || "远程设备输入后可使用";
+  if (accessCodeMeta) accessCodeMeta.textContent = `${settings.accessCodeLength} 位数字`;
   addressList.innerHTML = "";
   for (const entry of info.addresses || []) {
     const row = document.createElement("div");

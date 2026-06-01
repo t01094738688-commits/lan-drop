@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LAN Drop</title>
-    <link rel="stylesheet" href="/access.css?v=2026060102" />
-    <link rel="stylesheet" href="/styles.css?v=2026060108" />
+    <link rel="stylesheet" href="/access.css?v=2026060103" />
+    <link rel="stylesheet" href="/styles.css?v=2026060109" />
   </head>
   <body>
     <main class="app desktop-shell">
@@ -51,7 +51,7 @@
               <div class="access-row">
                 <span>访问码</span>
                 <strong id="accessCodeValue">正在读取...</strong>
-                <em>4 位数字</em>
+                <em id="accessCodeMeta">4 位数字</em>
               </div>
               <div class="connect-actions">
                 <button id="copyUrl" type="button">复制地址</button>
@@ -159,6 +159,7 @@
                 <h2>剪贴板历史</h2>
                 <p>最近通过剪贴板发送的文字、链接和截图会显示在这里。</p>
               </div>
+              <button id="clearClipboardHistory" type="button" class="ghost">清空历史</button>
             </div>
             <div id="clipboardHistory" class="clipboard-history"></div>
           </section>
@@ -210,11 +211,11 @@
               <label class="setting-row">
                 <span>
                   <strong>访问码长度</strong>
-                  <em>当前稳定版本使用 4 位数字，6 位会在后续版本加入</em>
+                  <em>4 位更适合小白输入，6 位更稳妥；修改后旧访问码会失效。</em>
                 </span>
                 <select id="accessLengthSetting">
                   <option value="4">4 位数字</option>
-                  <option value="6" disabled>6 位数字（待加入）</option>
+                  <option value="6">6 位数字</option>
                 </select>
               </label>
               <div class="setting-row">
@@ -222,7 +223,10 @@
                   <strong>保存目录</strong>
                   <em id="settingsInboxPath">正在读取...</em>
                 </span>
-                <button id="copyInboxPath" type="button" class="ghost">复制路径</button>
+                <div class="setting-actions">
+                  <button id="openInboxPath" type="button" class="secondary">打开目录</button>
+                  <button id="copyInboxPath" type="button" class="ghost">复制路径</button>
+                </div>
               </div>
             </div>
           </section>
@@ -268,7 +272,7 @@
         </div>
       </article>
     </template>
-    <script src="/access.js?v=2026060102"></script>
-    <script src="/app.js?v=2026060108"></script>
+    <script src="/access.js?v=2026060103"></script>
+    <script src="/app.js?v=2026060109"></script>
   </body>
 </html>

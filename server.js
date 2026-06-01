@@ -19,12 +19,18 @@ const YAOJI_VAULT_FILE = path.join(DATA_DIR, "yaoji-vault.json");
 const ACCESS_CODE_FILE = path.join(DATA_DIR, "access-code.txt");
 const ITEMS_FILE = path.join(DATA_DIR, "items.json");
 const DEVICES_FILE = path.join(DATA_DIR, "devices.json");
+const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 const NOTES_DIR = path.join(DATA_DIR, "notes");
 const MAX_BODY_BYTES = 200 * 1024 * 1024;
 const MAX_ITEMS = 1000;
 const SESSION_COOKIE = "lan_drop_session";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const RELEASES_API_URL = "https://api.github.com/repos/t01094738688-commits/lan-drop/releases";
+const DEFAULT_SETTINGS = {
+  deviceName: os.hostname(),
+  accessCodeLength: 4,
+  clipboardSync: false
+};
 
 fs.mkdirSync(INBOX_DIR, { recursive: true });
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -56,13 +62,41 @@ if (fs.existsSync(legacyYaojiVaultFile) && !fs.existsSync(YAOJI_VAULT_FILE)) {
   fs.renameSync(legacyYaojiVaultFile, YAOJI_VAULT_FILE);
 }
 
+function sanitizeSettings(value = {}) {
+  const accessCodeLength = Number(value.accessCodeLength) === 6 ? 6 : 4;
+  return {
+    deviceName: String(value.deviceName || DEFAULT_SETTINGS.deviceName).trim().slice(0, 40) || DEFAULT_SETTINGS.deviceName,
+    accessCodeLength,
+    clipboardSync: Boolean(value.clipboardSync)
+  };
+}
+
+function loadSettings() {
+  if (!fs.existsSync(SETTINGS_FILE)) return { ...DEFAULT_SETTINGS };
+  try {
+    return sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      ...JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"))
+    });
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+function saveSettings() {
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), "utf8");
+}
+
+let settings = loadSettings();
+
 function loadAccessCode() {
-  if (process.env.LAN_DROP_ACCESS_CODE && /^\d{4}$/.test(process.env.LAN_DROP_ACCESS_CODE)) {
+  const pattern = new RegExp(`^\\d{${settings.accessCodeLength}}$`);
+  if (process.env.LAN_DROP_ACCESS_CODE && pattern.test(process.env.LAN_DROP_ACCESS_CODE)) {
     return process.env.LAN_DROP_ACCESS_CODE;
   }
   if (fs.existsSync(ACCESS_CODE_FILE)) {
     const saved = fs.readFileSync(ACCESS_CODE_FILE, "utf8").trim();
-    if (/^\d{4}$/.test(saved)) return saved;
+    if (pattern.test(saved)) return saved;
   }
   const code = generateAccessCode();
   fs.writeFileSync(ACCESS_CODE_FILE, code, "utf8");
@@ -70,7 +104,9 @@ function loadAccessCode() {
 }
 
 function generateAccessCode() {
-  return String(crypto.randomInt(0, 10000)).padStart(4, "0");
+  const length = settings.accessCodeLength === 6 ? 6 : 4;
+  const max = 10 ** length;
+  return String(crypto.randomInt(0, max)).padStart(length, "0");
 }
 
 let ACCESS_CODE = loadAccessCode();
@@ -497,6 +533,15 @@ function refreshAccessCode() {
   return ACCESS_CODE;
 }
 
+function updateSettings(nextSettings) {
+  const previousLength = settings.accessCodeLength;
+  settings = sanitizeSettings({ ...settings, ...nextSettings });
+  saveSettings();
+  const codeChanged = previousLength !== settings.accessCodeLength;
+  if (codeChanged) refreshAccessCode();
+  return { settings, codeChanged };
+}
+
 function listDevices() {
   const activeDeviceIds = new Set(
     [...sessions.values()]
@@ -893,6 +938,7 @@ function createServer() {
         port: requestPort,
         version: APP_VERSION,
         inbox: INBOX_DIR,
+        settings,
         accessRequired: !isLocalRequest(req),
         accessCode: isLocalRequest(req) ? ACCESS_CODE : null,
         urls,
@@ -903,6 +949,27 @@ function createServer() {
           recommended: entry === addresses[0]
         }))
       });
+      return;
+    }
+
+    if (req.method === "GET" && route === "/api/settings") {
+      if (!isLocalRequest(req)) {
+        json(res, 403, { error: "Settings can only be managed from this computer." });
+        return;
+      }
+      json(res, 200, { settings, accessCode: ACCESS_CODE });
+      return;
+    }
+
+    if (req.method === "PUT" && route === "/api/settings") {
+      if (!isLocalRequest(req)) {
+        json(res, 403, { error: "Settings can only be managed from this computer." });
+        return;
+      }
+      const body = await readBody(req);
+      const payload = JSON.parse(body || "{}");
+      const result = updateSettings(payload.settings || payload);
+      json(res, 200, { ok: true, ...result, accessCode: ACCESS_CODE });
       return;
     }
 
@@ -928,7 +995,8 @@ function createServer() {
       json(res, 200, {
         ok: hasAccess(req, parsedUrl),
         isLocal: isLocalRequest(req),
-        code: isLocalRequest(req) ? ACCESS_CODE : null
+        code: isLocalRequest(req) ? ACCESS_CODE : null,
+        accessCodeLength: settings.accessCodeLength
       });
       return;
     }
@@ -1048,6 +1116,16 @@ function createServer() {
       } catch (error) {
         json(res, 400, { error: error.message });
       }
+      return;
+    }
+
+    if (req.method === "POST" && route === "/api/open-inbox") {
+      if (!isLocalRequest(req)) {
+        json(res, 403, { error: "Inbox can only be opened from this computer." });
+        return;
+      }
+      await openFileWithDefaultApp(INBOX_DIR);
+      json(res, 200, { ok: true });
       return;
     }
 

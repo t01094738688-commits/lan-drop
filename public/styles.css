@@ -720,6 +720,13 @@ textarea {
   font: inherit;
 }
 
+.setting-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .devices-panel .section-head p {
   margin-top: 4px;
   font-size: 13px;

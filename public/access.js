@@ -19,8 +19,9 @@
     }
   };
 
-  function showGate() {
+  function showGate(accessCodeLength = 4) {
     if (document.querySelector(".access-gate")) return;
+    const length = accessCodeLength === 6 ? 6 : 4;
     const gate = document.createElement("div");
     gate.className = "access-gate";
     gate.innerHTML = `
@@ -34,9 +35,9 @@
           autocomplete="one-time-code"
           autocapitalize="none"
           spellcheck="false"
-          maxlength="4"
-          pattern="\\d{4}"
-          placeholder="输入 4 位访问码"
+          maxlength="${length}"
+          pattern="\\d{${length}}"
+          placeholder="输入 ${length} 位访问码"
           required
         />
         <button type="submit">进入 LAN Drop</button>
@@ -53,8 +54,9 @@
       event.preventDefault();
       const code = new FormData(form).get("code").trim();
       if (!code) return;
-      if (!/^\d{4}$/.test(code)) {
-        error.textContent = "请输入电脑端显示的 4 位数字访问码。";
+      const pattern = new RegExp(`^\\d{${length}}$`);
+      if (!pattern.test(code)) {
+        error.textContent = `请输入电脑端显示的 ${length} 位数字访问码。`;
         input.select();
         return;
       }
@@ -85,6 +87,6 @@
 
   document.addEventListener("DOMContentLoaded", async () => {
     const status = await window.lanDropAccess.status().catch(() => ({ ok: true }));
-    if (!status.ok) showGate();
+    if (!status.ok) showGate(status.accessCodeLength);
   });
 })();
