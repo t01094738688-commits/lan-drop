@@ -62,5 +62,6 @@
   },
   "dependencies": {
     "qrcode": "^1.5.4"
-  }
+  },
+  "author": "t01094738688-commits"
 }
