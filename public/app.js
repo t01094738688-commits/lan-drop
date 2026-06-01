@@ -197,6 +197,12 @@ function setClipboardHint(message, kind = "info") {
   clipboardHint.dataset.kind = kind;
 }
 
+function friendlyError(message) {
+  if (message === "Access code required.") return "登录已失效，请刷新页面后重新输入访问码。";
+  if (message === "The upload is too large. Keep one item under 200 MB.") return "文件太大，单个文件请控制在 200 MB 以内。";
+  return message || "操作失败";
+}
+
 function itemMatchesFilters(item) {
   const query = searchInput.value.trim().toLowerCase();
   const filter = typeFilter.value;
@@ -353,7 +359,7 @@ async function postItem(payload) {
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "发送失败");
+    throw new Error(friendlyError(data.error || "发送失败"));
   }
 }
 
@@ -426,6 +432,7 @@ function uploadQueueEntry(entry) {
     const xhr = new XMLHttpRequest();
     entry.xhr = xhr;
     xhr.open("POST", "/api/upload");
+    xhr.withCredentials = true;
     xhr.setRequestHeader("Content-Type", entry.file.type || "application/octet-stream");
     xhr.setRequestHeader("X-File-Name", encodeURIComponent(entry.file.name || "upload"));
     xhr.upload.addEventListener("progress", (event) => {
@@ -446,7 +453,7 @@ function uploadQueueEntry(entry) {
       } else {
         let error = "上传失败";
         try {
-          error = JSON.parse(xhr.responseText).error || error;
+          error = friendlyError(JSON.parse(xhr.responseText).error || error);
         } catch {}
         entry.status = "failed";
         entry.statusText = error;
@@ -520,8 +527,12 @@ document.addEventListener("paste", async (event) => {
     setClipboardHint("已从剪贴板发送图片/截图", "ok");
   } else if (text && ![textInput, clipboardInput].includes(document.activeElement)) {
     event.preventDefault();
-    await postItem({ type: "text", text, source: "clipboard" });
-    showStatus("已发送剪贴板文字", "ok");
+    try {
+      await postItem({ type: "text", text, source: "clipboard" });
+      showStatus("已发送剪贴板文字", "ok");
+    } catch (error) {
+      showStatus(error.message, "error");
+    }
   }
 });
 
@@ -551,11 +562,16 @@ sendClipboard?.addEventListener("click", async () => {
     clipboardInput.focus();
     return;
   }
-  await postItem({ type: "text", text, source: "clipboard" });
-  clipboardInput.value = "";
-  resizeClipboardInput();
-  setClipboardHint("已发送到收到内容列表，手机端可复制。", "ok");
-  showStatus("剪贴板内容已发送", "ok");
+  try {
+    await postItem({ type: "text", text, source: "clipboard" });
+    clipboardInput.value = "";
+    resizeClipboardInput();
+    setClipboardHint("已发送到收到内容列表，手机端可复制。", "ok");
+    showStatus("剪贴板内容已发送", "ok");
+  } catch (error) {
+    setClipboardHint(error.message, "error");
+    showStatus(error.message, "error");
+  }
 });
 
 clearClipboard?.addEventListener("click", () => {

@@ -6,7 +6,7 @@
   }
 
   window.fetch = function (resource, init = {}) {
-    return originalFetch(resource, init);
+    return originalFetch(resource, { credentials: "same-origin", ...init });
   };
 
   window.lanDropAccess = {
