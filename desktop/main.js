@@ -1,10 +1,11 @@
 ﻿const { app, BrowserWindow, Menu, Tray, shell, nativeImage, dialog } = require("electron");
 const path = require("path");
 const net = require("net");
+const packageInfo = require("../package.json");
 
 const APP_NAME = "闪传本子";
 const DATA_DIR_NAME = "闪传本子";
-const APP_VERSION = "0.1.0";
+const APP_VERSION = packageInfo.version || "0.1.0";
 const DEFAULT_PORT = Number(process.env.PORT || 47321);
 
 let port = DEFAULT_PORT;
