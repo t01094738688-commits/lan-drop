@@ -1,4 +1,4 @@
-# LAN Drop v0.1.2-beta.1
+# LAN Drop v0.1.2-beta.2
 
 这是 LAN Drop / 闪传本子的早期测试版本。
 
