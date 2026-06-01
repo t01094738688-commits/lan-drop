@@ -32,6 +32,10 @@ const readClipboard = document.querySelector("#readClipboard");
 const sendClipboard = document.querySelector("#sendClipboard");
 const clearClipboard = document.querySelector("#clearClipboard");
 const clipboardHint = document.querySelector("#clipboardHint");
+const updatePanel = document.querySelector("#updatePanel");
+const updateSummary = document.querySelector("#updateSummary");
+const checkUpdate = document.querySelector("#checkUpdate");
+const updateActions = document.querySelector("#updateActions");
 
 let items = [];
 let phoneUrl = location.href;
@@ -40,6 +44,7 @@ let queue = [];
 let isLocalAccess = false;
 let currentAccessCode = "";
 let devices = [];
+let appVersion = "";
 
 async function copyText(text, button) {
   try {
@@ -175,6 +180,12 @@ function formatRelativeTime(value) {
   if (diff < 60 * 60 * 1000) return `${Math.floor(diff / 60000)} 分钟前`;
   if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / 3600000)} 小时前`;
   return formatTime(value);
+}
+
+function updateAssetLabel(asset) {
+  const name = asset?.name || "";
+  const platform = /mac/i.test(name) ? "Mac 版" : /win|\.exe$/i.test(name) ? "Windows 版" : "安装包";
+  return `${platform}${asset.size ? ` · ${formatSize(asset.size)}` : ""}`;
 }
 
 function authUrl(url) {
@@ -349,6 +360,80 @@ async function revokeDevice(device) {
   devices = data.devices || [];
   renderDevices();
   showStatus("已踢出设备", "ok");
+}
+
+function renderUpdateResult(data) {
+  if (!updatePanel || !updateSummary || !updateActions) return;
+  updateActions.innerHTML = "";
+  const current = data.currentVersion || appVersion || "未知";
+
+  if (data.updateAvailable) {
+    const version = data.name || data.tagName || "新版本";
+    updateSummary.textContent = `发现 ${version}，当前版本 v${current}。建议下载新版安装包后覆盖安装。`;
+  } else {
+    updateSummary.textContent = `当前版本 v${current}，已经是最新可用版本。`;
+  }
+
+  const assets = [data.recommendedAsset, data.windowsAsset, data.macAsset]
+    .filter(Boolean)
+    .filter((asset, index, list) => list.findIndex((item) => item.name === asset.name) === index);
+
+  for (const asset of assets) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = `下载 ${updateAssetLabel(asset)}`;
+    button.title = asset.name || "";
+    button.addEventListener("click", () => {
+      window.open(asset.browserDownloadUrl, "_blank", "noopener");
+    });
+    updateActions.append(button);
+  }
+
+  if (data.htmlUrl) {
+    const openRelease = document.createElement("button");
+    openRelease.type = "button";
+    openRelease.className = "secondary";
+    openRelease.textContent = "打开发布页";
+    openRelease.addEventListener("click", () => window.open(data.htmlUrl, "_blank", "noopener"));
+    updateActions.append(openRelease);
+
+    const copyLink = document.createElement("button");
+    copyLink.type = "button";
+    copyLink.className = "ghost";
+    copyLink.textContent = "复制下载页";
+    copyLink.addEventListener("click", () => copyText(data.htmlUrl, copyLink));
+    updateActions.append(copyLink);
+  }
+}
+
+async function checkForUpdates({ quiet = false } = {}) {
+  if (!isLocalAccess || !updatePanel || !checkUpdate || !updateActions) return;
+  const original = checkUpdate.textContent;
+  checkUpdate.disabled = true;
+  checkUpdate.textContent = "检查中...";
+  if (!quiet && updateSummary) updateSummary.textContent = "正在连接 GitHub Releases 检查新版本...";
+  try {
+    const response = await fetch("/api/update/latest");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || data.error || "检查失败");
+    renderUpdateResult(data);
+    if (!quiet) showStatus(data.updateAvailable ? "发现新版本" : "当前已是最新版本", "ok");
+  } catch (error) {
+    if (updateSummary) updateSummary.textContent = `检查更新失败：${error.message}。可以稍后重试，或手动打开 GitHub Releases。`;
+    updateActions.innerHTML = "";
+    const openRelease = document.createElement("button");
+    openRelease.type = "button";
+    openRelease.className = "secondary";
+    openRelease.textContent = "打开下载页";
+    openRelease.addEventListener("click", () => {
+      window.open("https://github.com/t01094738688-commits/lan-drop/releases", "_blank", "noopener");
+    });
+    updateActions.append(openRelease);
+    if (!quiet) showStatus("检查更新失败", "error");
+  } finally {
+    checkUpdate.disabled = false;
+    checkUpdate.textContent = original || "检查更新";
+  }
 }
 
 async function postItem(payload) {
@@ -628,6 +713,8 @@ refreshDevices?.addEventListener("click", async () => {
   flashAction(refreshDevices, "已刷新");
 });
 
+checkUpdate?.addEventListener("click", () => checkForUpdates());
+
 async function boot() {
   let info;
   try {
@@ -646,7 +733,10 @@ async function boot() {
     serviceStatus.dataset.state = "ok";
   }
   renderDevices();
-  if (versionBadge && info.version) versionBadge.textContent = `v${info.version}`;
+  appVersion = info.version || "";
+  if (versionBadge && appVersion) versionBadge.textContent = `v${appVersion}`;
+  if (updatePanel) updatePanel.hidden = !isLocalAccess;
+  if (updateSummary && appVersion) updateSummary.textContent = `当前版本 v${appVersion}。点击检查更新，可直接下载最新版安装包。`;
   phoneUrls = info.urls || [];
   phoneUrl = phoneUrls[0] || location.href;
   recommendedUrl.textContent = phoneUrl;
@@ -685,6 +775,7 @@ async function boot() {
   render();
   resizeClipboardInput();
   await loadDevices();
+  if (isLocalAccess) setTimeout(() => checkForUpdates({ quiet: true }), 800);
 
   const events = new EventSource(authUrl("/api/events"));
   events.onmessage = (event) => {

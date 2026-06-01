@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LAN Drop</title>
     <link rel="stylesheet" href="/access.css?v=2026060102" />
-    <link rel="stylesheet" href="/styles.css?v=2026060106" />
+    <link rel="stylesheet" href="/styles.css?v=2026060107" />
   </head>
   <body>
     <main class="app">
@@ -77,6 +77,17 @@
           <button id="refreshDevices" type="button" class="ghost">刷新</button>
         </div>
         <div id="devicesList" class="devices-list"></div>
+      </section>
+
+      <section class="panel update-panel" id="updatePanel" hidden>
+        <div class="section-head">
+          <div>
+            <h2>软件更新</h2>
+            <p id="updateSummary">在软件里检查最新版，不用去 GitHub 页面里找安装包。</p>
+          </div>
+          <button id="checkUpdate" type="button" class="ghost">检查更新</button>
+        </div>
+        <div id="updateActions" class="update-actions"></div>
       </section>
 
       <section class="panel clipboard-panel" id="clipboardPanel">
@@ -169,6 +180,6 @@
       </article>
     </template>
     <script src="/access.js?v=2026060102"></script>
-    <script src="/app.js?v=2026060106"></script>
+    <script src="/app.js?v=2026060107"></script>
   </body>
 </html>

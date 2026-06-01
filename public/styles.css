@@ -470,6 +470,28 @@ textarea {
   margin-bottom: 14px;
 }
 
+.update-panel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+  border-color: rgba(15, 118, 110, 0.18);
+}
+
+.update-panel .section-head p {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.update-actions:empty {
+  display: none;
+}
+
 .devices-panel .section-head p {
   margin-top: 4px;
   font-size: 13px;
@@ -849,7 +871,8 @@ textarea {
 
   .remote-device .connect-card,
   .remote-device .guide-grid,
-  .remote-device .devices-panel {
+  .remote-device .devices-panel,
+  .remote-device .update-panel {
     display: none !important;
   }
 
@@ -894,7 +917,8 @@ textarea {
 
   .drop-zone p,
   .clipboard-panel .section-head p,
-  .devices-panel .section-head p {
+  .devices-panel .section-head p,
+  .update-panel .section-head p {
     font-size: 13px;
     line-height: 1.5;
   }
@@ -908,6 +932,8 @@ textarea {
   .connect-actions > *,
   .clipboard-actions,
   .clipboard-actions > *,
+  .update-actions,
+  .update-actions > *,
   .actions,
   .actions > *,
   .item-actions,

@@ -1,4 +1,5 @@
 ﻿const http = require("http");
+const https = require("https");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -23,6 +24,7 @@ const MAX_BODY_BYTES = 200 * 1024 * 1024;
 const MAX_ITEMS = 1000;
 const SESSION_COOKIE = "lan_drop_session";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const RELEASES_API_URL = "https://api.github.com/repos/t01094738688-commits/lan-drop/releases";
 
 fs.mkdirSync(INBOX_DIR, { recursive: true });
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -99,6 +101,106 @@ function json(res, status, payload) {
     "Content-Length": Buffer.byteLength(body)
   });
   res.end(body);
+}
+
+function requestJson(url) {
+  return new Promise((resolve, reject) => {
+    const request = https.get(
+      url,
+      {
+        headers: {
+          "Accept": "application/vnd.github+json",
+          "User-Agent": `LAN-Drop/${APP_VERSION}`
+        },
+        timeout: 25000
+      },
+      (response) => {
+        const chunks = [];
+        response.on("data", (chunk) => chunks.push(chunk));
+        response.on("end", () => {
+          const text = Buffer.concat(chunks).toString("utf8");
+          if (response.statusCode < 200 || response.statusCode >= 300) {
+            reject(new Error(`GitHub returned ${response.statusCode}`));
+            return;
+          }
+          try {
+            resolve(JSON.parse(text));
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+    );
+    request.on("timeout", () => request.destroy(new Error("Request timed out")));
+    request.on("error", reject);
+  });
+}
+
+function parseVersion(value = "") {
+  const match = String(value).match(/v?(\d+)\.(\d+)\.(\d+)(?:[-.]beta\.?(\d+))?/i);
+  if (!match) return null;
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3]),
+    beta: match[4] ? Number(match[4]) : Infinity
+  };
+}
+
+function compareVersions(a, b) {
+  const left = parseVersion(a);
+  const right = parseVersion(b);
+  if (!left || !right) return 0;
+  for (const key of ["major", "minor", "patch", "beta"]) {
+    if (left[key] > right[key]) return 1;
+    if (left[key] < right[key]) return -1;
+  }
+  return 0;
+}
+
+function normalizeRelease(release) {
+  const assets = (release.assets || []).map((asset) => ({
+    name: asset.name,
+    size: asset.size,
+    browserDownloadUrl: asset.browser_download_url
+  }));
+  const windowsAsset =
+    assets.find((asset) => /win.*x64.*\.exe$/i.test(asset.name)) ||
+    assets.find((asset) => /\.exe$/i.test(asset.name));
+  const macAsset =
+    assets.find((asset) => /mac.*arm64.*\.dmg$/i.test(asset.name)) ||
+    assets.find((asset) => /mac.*\.dmg$/i.test(asset.name));
+  const recommendedAsset = process.platform === "darwin" ? macAsset : windowsAsset;
+  return {
+    currentVersion: APP_VERSION,
+    platform: process.platform,
+    updateAvailable: compareVersions(release.tag_name || release.name, APP_VERSION) > 0,
+    tagName: release.tag_name,
+    name: release.name || release.tag_name,
+    prerelease: Boolean(release.prerelease),
+    htmlUrl: release.html_url,
+    publishedAt: release.published_at,
+    assets,
+    windowsAsset,
+    macAsset,
+    recommendedAsset
+  };
+}
+
+async function latestReleaseInfo() {
+  const releases = await requestJson(RELEASES_API_URL);
+  const release = (Array.isArray(releases) ? releases : []).find(
+    (entry) => !entry.draft && Array.isArray(entry.assets) && entry.assets.length > 0
+  );
+  if (!release) {
+    return {
+      currentVersion: APP_VERSION,
+      platform: process.platform,
+      updateAvailable: false,
+      assets: []
+    };
+  }
+  return normalizeRelease(release);
 }
 
 function isLocalRequest(req) {
@@ -766,6 +868,24 @@ function createServer() {
           recommended: entry === addresses[0]
         }))
       });
+      return;
+    }
+
+    if (req.method === "GET" && route === "/api/update/latest") {
+      if (!isLocalRequest(req)) {
+        json(res, 403, { error: "Updates can only be checked from this computer." });
+        return;
+      }
+      try {
+        json(res, 200, await latestReleaseInfo());
+      } catch (error) {
+        json(res, 502, {
+          error: "Unable to check updates.",
+          detail: error.message,
+          currentVersion: APP_VERSION,
+          releasesUrl: "https://github.com/t01094738688-commits/lan-drop/releases"
+        });
+      }
       return;
     }
 
