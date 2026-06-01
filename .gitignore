@@ -2,6 +2,7 @@ node_modules/
 release/
 inbox/
 .smoke-inbox/
+.smoke-*/
 *.log
 *.tmp
 *.bak
