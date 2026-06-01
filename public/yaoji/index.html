@@ -1,0 +1,132 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>钥记</title>
+    <link rel="stylesheet" href="/access.css" />
+    <link rel="stylesheet" href="styles.css?v=2026060101" />
+  </head>
+  <body>
+    <main class="shell">
+      <nav class="module-nav" aria-label="模块切换">
+        <a href="/">互传</a>
+        <span>钥记</span>
+        <a href="/notes/">随记</a>
+      </nav>
+
+      <section class="auth-view" id="authView">
+        <div class="brand">
+          <div class="mark">钥</div>
+          <div>
+            <h1>钥记</h1>
+            <p>账号、邮箱、密钥、密码、Token，都放进一个本地加密的小本子。</p>
+          </div>
+        </div>
+
+        <form class="auth-panel" id="authForm">
+          <label id="masterPasswordLabel" for="masterPassword">主密码</label>
+          <div class="password-row">
+            <input id="masterPassword" type="password" autocomplete="current-password" placeholder="输入主密码" />
+            <button type="button" class="icon-button" id="togglePassword" aria-label="显示或隐藏密码">看</button>
+          </div>
+          <label class="check-row">
+            <input id="keepUnlocked" type="checkbox" checked />
+            本次打开期间保持解锁
+          </label>
+          <button type="button" class="primary" id="unlockButton">打开钥记</button>
+          <button type="button" class="danger reset-vault hidden" id="resetVaultButton">忘记密码，清空本机库</button>
+          <p class="hint" id="authHint">第一次使用时，输入至少 8 位主密码即可创建本机加密库。主密码不上传，也不会永久保存。</p>
+          <p class="hint subtle">访问码只保护局域网入口；钥记主密码用于加密你的账号、密码和密钥。</p>
+        </form>
+      </section>
+
+      <section class="app-view hidden" id="appView">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">本地加密记录</p>
+            <h2>钥记</h2>
+          </div>
+          <div class="actions">
+            <button type="button" class="ghost" id="exportButton">导出</button>
+            <label class="ghost file-button">
+              导入
+              <input id="importInput" type="file" accept="application/json" />
+            </label>
+            <button type="button" class="danger" id="lockButton">锁定</button>
+          </div>
+        </header>
+
+        <div class="workspace compact-workspace">
+          <aside class="editor">
+            <div class="editor-head">
+              <h3 id="formTitle">新记录</h3>
+              <button type="button" class="ghost compact hidden" id="newButton">新建</button>
+            </div>
+            <form id="recordForm">
+              <label>
+                名称
+                <input id="titleInput" type="text" placeholder="例如：Gmail、Claude Key、测试服 SSH" required />
+              </label>
+              <div class="split">
+                <label>
+                  类型
+                  <select id="typeInput">
+                    <option value="账号">账号</option>
+                    <option value="密钥">密钥</option>
+                    <option value="其他">其他</option>
+                  </select>
+                </label>
+                <label>
+                  账号 / 邮箱
+                  <input id="accountInput" type="text" placeholder="可选" autocomplete="off" />
+                </label>
+              </div>
+              <label>
+                密码 / 密钥 / 内容
+                <textarea id="secretInput" rows="7" placeholder="把密码、密钥、Token 或临时内容贴在这里" required></textarea>
+              <button type="button" class="ghost compact" id="generatePassword" style="margin-top:-6px">生成随机密码</button>
+              </label>
+              <label>
+                备注
+                <textarea id="notesInput" rows="3" placeholder="可选：用途、来源、绑定手机、过期时间"></textarea>
+              <label>
+                标签（逗号分隔，最多 8 个）
+                <input id="tagsInput" type="text" placeholder="例如：工作、个人、邮箱" autocomplete="off" />
+              </label>
+              <label>
+                到期日期
+                <input id="expiresInput" type="date" />
+              </label>
+              </label>
+              <div class="form-actions">
+                <button type="submit" class="primary">保存</button>
+                <button type="button" class="ghost hidden" id="deleteButton">删除</button>
+              </div>
+            </form>
+          </aside>
+
+          <section class="records">
+            <div class="search-row">
+              <input id="searchInput" type="search" placeholder="搜索名称、账号、内容、备注" />
+              <select id="filterInput" aria-label="筛选类型">
+                <option value="all">全部</option>
+                <option value="账号">账号</option>
+                <option value="密钥">密钥</option>
+                <option value="其他">其他</option>
+              </select>
+            </div>
+            <div class="summary" id="summaryText">0 条记录</div>
+            <div class="record-list" id="recordList"></div>
+          </section>
+        </div>
+      </section>
+
+      <div class="toast hidden" id="toast"></div>
+    </main>
+
+    <script src="/access.js?v=20260529"></script>
+    <script src="app.js?v=2026060101"></script>
+  </body>
+</html>
+

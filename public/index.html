@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LAN Drop</title>
+    <link rel="stylesheet" href="/access.css" />
+    <link rel="stylesheet" href="/styles.css?v=2026060103" />
+  </head>
+  <body>
+    <main class="app">
+      <nav class="module-nav" aria-label="模块切换">
+        <span>互传</span>
+        <a href="/yaoji/">钥记</a>
+        <a href="/notes/">随记</a>
+      </nav>
+
+      <header class="hero">
+        <div>
+          <h1>LAN Drop</h1>
+          <p id="serviceStatus" class="service-status">正在检查服务状态...</p>
+        </div>
+        <p class="hero-copy">手机和电脑在同一个 Wi-Fi 下，扫码即可互传文件、图片和文字。</p>
+      </header>
+
+      <section class="connect-card" id="connectPanel" aria-label="手机访问地址">
+        <div class="connect-main">
+          <p class="eyebrow">手机访问地址</p>
+          <p id="recommendedUrl" class="main-url">正在检测可用地址...</p>
+          <div class="access-row">
+            <span>访问码</span>
+            <strong id="accessCodeValue">正在读取...</strong>
+          </div>
+          <div class="connect-actions">
+            <button id="copyUrl" type="button">复制地址</button>
+            <button id="copyAccessCode" type="button" class="secondary">复制访问码</button>
+            <button id="refreshAccessCode" type="button" class="ghost">刷新访问码</button>
+          </div>
+        </div>
+        <div class="qr-box">
+          <img id="qrCode" alt="手机访问二维码" />
+          <span>手机扫码打开</span>
+        </div>
+      </section>
+
+      <section class="guide-grid">
+        <article class="network-card">
+          <p class="eyebrow">当前网络</p>
+          <strong id="networkName">正在检测...</strong>
+          <p id="networkTip">请让手机连接和电脑相同的 Wi-Fi，然后扫码或打开上方地址。</p>
+          <div class="address-list" id="addressList"></div>
+        </article>
+        <article class="steps-card">
+          <p class="eyebrow">使用方法</p>
+          <ol>
+            <li>手机和电脑连接同一个 Wi-Fi</li>
+            <li>手机扫码或打开访问地址</li>
+            <li>输入访问码</li>
+            <li>选择文件、图片或文字发送</li>
+          </ol>
+        </article>
+      </section>
+
+      <section class="drop-zone" id="dropZone">
+        <div>
+          <h2>发送文件到手机/电脑</h2>
+          <p>拖入图片、文件，或点击按钮选择。也可以 Ctrl + V 粘贴截图。</p>
+        </div>
+        <div class="actions">
+          <label class="file-button">
+            选择文件/图片
+            <input id="fileInput" type="file" multiple />
+          </label>
+          <button id="pasteText" type="button" class="secondary">发送文字</button>
+        </div>
+      </section>
+      <div id="status" class="status" role="status" hidden></div>
+
+      <section class="panel upload-queue" id="queuePanel" hidden>
+        <div class="section-head">
+          <h2>发送队列</h2>
+          <span id="queueSummary"></span>
+        </div>
+        <div id="queueList" class="queue-list"></div>
+      </section>
+
+      <section class="panel text-panel" id="textPanel" hidden>
+        <textarea id="textInput" rows="5" placeholder="把要发送到另一台设备的文字贴在这里"></textarea>
+        <div class="actions right">
+          <button id="cancelText" type="button" class="ghost">取消</button>
+          <button id="sendText" type="button">发送</button>
+        </div>
+      </section>
+
+      <section class="feed">
+        <div class="section-head">
+          <div>
+            <h2>收到的内容</h2>
+            <p id="inboxPath"></p>
+          </div>
+          <span id="versionBadge" class="version-badge"></span>
+        </div>
+        <div class="timeline-tools">
+          <input id="searchInput" type="search" placeholder="搜索文件名、文字内容" />
+          <label class="type-filter">
+            <span>类型</span>
+            <select id="typeFilter" aria-label="按类型筛选">
+              <option value="all">全部</option>
+              <option value="image">图片</option>
+              <option value="file">文件</option>
+              <option value="text">文字</option>
+            </select>
+          </label>
+        </div>
+        <div id="items" class="items"></div>
+      </section>
+    </main>
+    <template id="itemTemplate">
+      <article class="item">
+        <div class="preview"></div>
+        <div class="meta">
+          <div class="item-topline">
+            <strong></strong>
+            <span class="item-type"></span>
+          </div>
+          <span class="item-detail"></span>
+          <span class="item-source">来源：局域网设备</span>
+          <div class="item-actions">
+            <a>打开</a>
+            <button type="button" class="copy-text" hidden>复制</button>
+            <button type="button" class="danger delete-item">删除</button>
+          </div>
+        </div>
+      </article>
+    </template>
+    <script src="/access.js?v=20260529"></script>
+    <script src="/app.js?v=2026060103"></script>
+  </body>
+</html>

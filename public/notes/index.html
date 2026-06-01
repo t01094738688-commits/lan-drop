@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>随记</title>
+    <link rel="stylesheet" href="/access.css" />
+    <link rel="stylesheet" href="styles.css?v=2026060101" />
+  </head>
+  <body>
+    <main class="notes-shell">
+      <nav class="module-nav" aria-label="模块切换">
+        <a href="/">互传</a>
+        <a href="/yaoji/">钥记</a>
+        <span>随记</span>
+      </nav>
+
+      <header class="notes-head">
+        <div>
+          <h1>随记</h1>
+          <p id="dayTitle">今天</p>
+        </div>
+        <div class="head-actions">
+          <input id="datePicker" type="date" aria-label="选择日期" />
+          <button id="prevDay" type="button" class="icon-button" title="前一天">‹</button>
+          <button id="todayButton" type="button" class="ghost">今天</button>
+          <button id="nextDay" type="button" class="icon-button" title="后一天">›</button>
+        </div>
+      </header>
+
+      <section class="toolbar" aria-label="筛选">
+        <input id="searchInput" type="search" placeholder="搜索随记、分类或图片名" />
+        <select id="categoryFilter" aria-label="按分类筛选"></select>
+        <button id="manageCategories" type="button" class="ghost">分类</button>
+      </section>
+
+      <section class="composer" aria-label="新建随记">
+        <div class="composer-top">
+          <select id="noteCategory" aria-label="选择分类"></select>
+          <span id="saveState">已保存</span>
+        </div>
+        <textarea id="noteText" rows="2" placeholder="写点什么，文字和图片会作为一条随记保存"></textarea>
+        <div id="draftImages" class="draft-images"></div>
+        <div class="composer-actions">
+          <label class="upload-button">
+            上传图片
+            <input id="imageInput" type="file" accept="image/*" multiple />
+          </label>
+          <button id="clearDraft" type="button" class="ghost">清空</button>
+          <button id="saveNote" type="button">保存随记</button>
+        </div>
+      </section>
+
+      <section class="list-head">
+        <strong id="listSummary">0 条随记</strong>
+        <span id="sendHint"></span>
+      </section>
+      <section id="notesList" class="notes-list" aria-label="随记列表"></section>
+    </main>
+
+    <dialog id="noteDialog">
+      <div class="dialog-bar">
+        <button id="dialogCopyText" type="button">复制文字</button>
+        <button id="dialogShare" type="button" class="ghost">分享整条</button>
+        <button id="dialogClose" type="button" class="ghost">关闭</button>
+      </div>
+      <article id="dialogContent" class="dialog-content"></article>
+    </dialog>
+
+    <dialog id="categoryDialog">
+      <form method="dialog" class="category-panel">
+        <div class="category-head">
+          <h2>分类</h2>
+          <button id="closeCategoryDialog" type="button" class="ghost">关闭</button>
+        </div>
+        <div id="categoryList" class="category-list"></div>
+        <div class="category-add">
+          <input id="newCategoryName" type="text" placeholder="新增分类" maxlength="16" />
+          <button id="addCategory" type="button">添加</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="/access.js?v=20260529"></script>
+    <script src="app.js?v=2026052901"></script>
+  </body>
+</html>

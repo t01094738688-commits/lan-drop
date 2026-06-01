@@ -1,0 +1,57 @@
+{
+  "name": "shanchuan-ben",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local LAN transfer, encrypted account notes, and quick notes between phone and computer.",
+  "main": "desktop/main.js",
+  "scripts": {
+    "start": "node server.js",
+    "desktop": "electron .",
+    "pack:win": "electron-builder --win portable",
+    "dist:win": "electron-builder --win nsis",
+    "pack:mac": "electron-builder --mac zip",
+    "dist:mac": "electron-builder --mac dmg zip"
+  },
+  "build": {
+    "appId": "com.shanchuan.ben",
+    "productName": "闪传本子",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "desktop/**/*",
+      "installer/**/*",
+      "public/**/*",
+      "server.js",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "include": "installer/installer.nsh"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity"
+    }
+  },
+  "devDependencies": {
+    "electron": "^42.3.0",
+    "electron-builder": "^26.8.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
+}

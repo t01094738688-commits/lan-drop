@@ -1,0 +1,10 @@
+node_modules/
+release/
+inbox/
+.smoke-inbox/
+*.log
+*.tmp
+*.bak
+*.new
+.DS_Store
+Thumbs.db
