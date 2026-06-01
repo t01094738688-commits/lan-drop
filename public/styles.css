@@ -237,6 +237,16 @@ span {
   letter-spacing: 0;
 }
 
+.access-row em {
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  padding: 3px 8px;
+}
+
 .connect-actions {
   display: flex;
   flex-wrap: wrap;

@@ -55,14 +55,20 @@ if (fs.existsSync(legacyYaojiVaultFile) && !fs.existsSync(YAOJI_VAULT_FILE)) {
 }
 
 function loadAccessCode() {
-  if (process.env.LAN_DROP_ACCESS_CODE) return process.env.LAN_DROP_ACCESS_CODE;
+  if (process.env.LAN_DROP_ACCESS_CODE && /^\d{4}$/.test(process.env.LAN_DROP_ACCESS_CODE)) {
+    return process.env.LAN_DROP_ACCESS_CODE;
+  }
   if (fs.existsSync(ACCESS_CODE_FILE)) {
     const saved = fs.readFileSync(ACCESS_CODE_FILE, "utf8").trim();
-    if (saved.length >= 12) return saved;
+    if (/^\d{4}$/.test(saved)) return saved;
   }
-  const code = crypto.randomBytes(12).toString("base64url");
+  const code = generateAccessCode();
   fs.writeFileSync(ACCESS_CODE_FILE, code, "utf8");
   return code;
+}
+
+function generateAccessCode() {
+  return String(crypto.randomInt(0, 10000)).padStart(4, "0");
 }
 
 let ACCESS_CODE = loadAccessCode();
@@ -382,7 +388,7 @@ function receiveFile(req, destination) {
 
 function refreshAccessCode() {
   if (process.env.LAN_DROP_ACCESS_CODE) return ACCESS_CODE;
-  ACCESS_CODE = crypto.randomBytes(12).toString("base64url");
+  ACCESS_CODE = generateAccessCode();
   fs.writeFileSync(ACCESS_CODE_FILE, ACCESS_CODE, "utf8");
   sessions.clear();
   unlockAttempts.clear();

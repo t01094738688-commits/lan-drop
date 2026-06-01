@@ -30,11 +30,13 @@
         <p>手机和电脑连接同一个 Wi-Fi 后，输入电脑端显示的访问码即可开始互传。</p>
         <input
           name="code"
-          inputmode="text"
+          inputmode="numeric"
           autocomplete="one-time-code"
           autocapitalize="none"
           spellcheck="false"
-          placeholder="输入电脑端访问码"
+          maxlength="4"
+          pattern="\\d{4}"
+          placeholder="输入 4 位访问码"
           required
         />
         <button type="submit">进入 LAN Drop</button>
@@ -51,6 +53,11 @@
       event.preventDefault();
       const code = new FormData(form).get("code").trim();
       if (!code) return;
+      if (!/^\d{4}$/.test(code)) {
+        error.textContent = "请输入电脑端显示的 4 位数字访问码。";
+        input.select();
+        return;
+      }
       error.textContent = "";
       button.disabled = true;
       button.textContent = "正在进入...";
