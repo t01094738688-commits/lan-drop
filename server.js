@@ -770,6 +770,41 @@ $data.SetFileDropList($files)
   });
 }
 
+function readSystemClipboardText() {
+  return new Promise((resolve, reject) => {
+    if (process.platform !== "win32") {
+      reject(new Error("System clipboard read is only implemented on Windows."));
+      return;
+    }
+    const script = `
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+try {
+  $text = Get-Clipboard -Raw -Format Text -ErrorAction Stop
+  [Console]::Write($text)
+} catch {
+  [Console]::Write("")
+}
+`;
+    const encoded = Buffer.from(script, "utf16le").toString("base64");
+    const child = childProcess.spawn("powershell.exe", ["-NoProfile", "-STA", "-EncodedCommand", encoded], {
+      windowsHide: true
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString("utf8");
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      if (code === 0) resolve(stdout);
+      else reject(new Error(stderr.trim() || `PowerShell exited with ${code}`));
+    });
+  });
+}
+
 function openFileWithDefaultApp(filePath) {
   return new Promise((resolve, reject) => {
     const pathBase64 = Buffer.from(filePath, "utf8").toString("base64");
@@ -1000,6 +1035,19 @@ function createServer() {
       res.write("retry: 1000\n\n");
       clients.add(res);
       req.on("close", () => clients.delete(res));
+      return;
+    }
+
+    if (req.method === "GET" && route === "/api/clipboard/text") {
+      if (!isLocalRequest(req)) {
+        json(res, 403, { error: "Clipboard can only be read from this computer." });
+        return;
+      }
+      try {
+        json(res, 200, { text: await readSystemClipboardText() });
+      } catch (error) {
+        json(res, 400, { error: error.message });
+      }
       return;
     }
 

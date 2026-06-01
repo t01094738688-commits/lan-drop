@@ -36,6 +36,15 @@ const updatePanel = document.querySelector("#updatePanel");
 const updateSummary = document.querySelector("#updateSummary");
 const checkUpdate = document.querySelector("#checkUpdate");
 const updateActions = document.querySelector("#updateActions");
+const viewButtons = [...document.querySelectorAll("[data-view-target]")];
+const views = [...document.querySelectorAll("[data-view]")];
+const clipboardHistory = document.querySelector("#clipboardHistory");
+const clipboardSyncToggle = document.querySelector("#clipboardSyncToggle");
+const settingClipboardSync = document.querySelector("#settingClipboardSync");
+const deviceNameInput = document.querySelector("#deviceNameInput");
+const accessLengthSetting = document.querySelector("#accessLengthSetting");
+const settingsInboxPath = document.querySelector("#settingsInboxPath");
+const copyInboxPath = document.querySelector("#copyInboxPath");
 
 let items = [];
 let phoneUrl = location.href;
@@ -45,6 +54,14 @@ let isLocalAccess = false;
 let currentAccessCode = "";
 let devices = [];
 let appVersion = "";
+let inboxDirectory = "";
+let clipboardPollTimer = null;
+let lastAutoClipboardText = "";
+
+const settings = {
+  deviceName: localStorage.getItem("lanDrop.deviceName") || "",
+  clipboardSync: localStorage.getItem("lanDrop.clipboardSync") === "true"
+};
 
 async function copyText(text, button) {
   try {
@@ -208,6 +225,67 @@ function setClipboardHint(message, kind = "info") {
   clipboardHint.dataset.kind = kind;
 }
 
+function showView(id) {
+  for (const view of views) view.hidden = view.id !== id;
+  for (const button of viewButtons) {
+    button.classList.toggle("active", button.dataset.viewTarget === id);
+  }
+  if (id === "clipboardView") renderClipboardHistory();
+  if (id === "devicesView") loadDevices();
+}
+
+function applySettings() {
+  if (deviceNameInput) deviceNameInput.value = settings.deviceName;
+  if (clipboardSyncToggle) clipboardSyncToggle.checked = settings.clipboardSync;
+  if (settingClipboardSync) settingClipboardSync.checked = settings.clipboardSync;
+  if (accessLengthSetting) accessLengthSetting.value = "4";
+  updateClipboardPolling();
+}
+
+function setClipboardSync(enabled) {
+  settings.clipboardSync = Boolean(enabled);
+  localStorage.setItem("lanDrop.clipboardSync", String(settings.clipboardSync));
+  if (clipboardSyncToggle) clipboardSyncToggle.checked = settings.clipboardSync;
+  if (settingClipboardSync) settingClipboardSync.checked = settings.clipboardSync;
+  updateClipboardPolling();
+}
+
+function updateClipboardPolling() {
+  if (clipboardPollTimer) {
+    clearInterval(clipboardPollTimer);
+    clipboardPollTimer = null;
+  }
+  if (!settings.clipboardSync || !isLocalAccess) return;
+  clipboardPollTimer = setInterval(readClipboardSilently, 2500);
+  readClipboardSilently();
+}
+
+async function readClipboardSilently() {
+  if (!settings.clipboardSync || document.hidden) return;
+  try {
+    const text = (await readClipboardText()).trim();
+    if (!text || text === lastAutoClipboardText) return;
+    lastAutoClipboardText = text;
+    await postItem({ type: "text", text, source: "clipboard" });
+    setClipboardHint("已自动记录新的剪贴板文字。", "ok");
+  } catch {
+    setClipboardSync(false);
+    setClipboardHint("浏览器暂时不允许自动读取剪贴板，已关闭实时监听。可以手动 Ctrl + V。", "error");
+  }
+}
+
+async function readClipboardText() {
+  if (isLocalAccess) {
+    const response = await fetch("/api/clipboard/text");
+    if (response.ok) {
+      const data = await response.json();
+      return data.text || "";
+    }
+  }
+  if (!navigator.clipboard?.readText) throw new Error("Clipboard read unavailable");
+  return navigator.clipboard.readText();
+}
+
 function friendlyError(message) {
   if (message === "Access code required.") return "登录已失效，请刷新页面后重新输入访问码。";
   if (message === "The upload is too large. Keep one item under 200 MB.") return "文件太大，单个文件请控制在 200 MB 以内。";
@@ -231,6 +309,7 @@ function itemMatchesFilters(item) {
 
 function render() {
   itemsEl.innerHTML = "";
+  renderClipboardHistory();
   const visibleItems = items.filter(itemMatchesFilters);
   if (!visibleItems.length) {
     const empty = document.createElement("div");
@@ -296,6 +375,48 @@ function render() {
 
     deleteButton.addEventListener("click", () => deleteItem(item));
     itemsEl.append(node);
+  }
+}
+
+function renderClipboardHistory() {
+  if (!clipboardHistory) return;
+  clipboardHistory.innerHTML = "";
+  const entries = items
+    .filter((item) => item.type === "text" && (item.source === "clipboard" || looksLikeUrl(item.text)))
+    .slice(0, 40);
+
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.innerHTML = "<strong>还没有剪贴板内容</strong><span>复制文字或链接后，开启实时监听或点击发送剪贴板。</span>";
+    clipboardHistory.append(empty);
+    return;
+  }
+
+  for (const item of entries) {
+    const row = document.createElement("article");
+    row.className = "clipboard-history-item";
+    const title = document.createElement("strong");
+    title.textContent = looksLikeUrl(item.text) ? "链接" : "文字";
+    const body = document.createElement("p");
+    body.textContent = item.text;
+    const meta = document.createElement("span");
+    meta.textContent = formatTime(item.createdAt);
+    const actions = document.createElement("div");
+    actions.className = "clipboard-history-actions";
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.className = "secondary";
+    copy.textContent = "复制";
+    copy.addEventListener("click", () => copyText(item.text, copy));
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "danger";
+    remove.textContent = "删除";
+    remove.addEventListener("click", () => deleteItem(item));
+    actions.append(copy, remove);
+    row.append(title, body, meta, actions);
+    clipboardHistory.append(row);
   }
 }
 
@@ -405,6 +526,33 @@ function renderUpdateResult(data) {
     updateActions.append(copyLink);
   }
 }
+
+for (const button of viewButtons) {
+  button.addEventListener("click", () => showView(button.dataset.viewTarget));
+}
+
+document.querySelector('a[href="#dropZone"]')?.addEventListener("click", () => showView("transferView"));
+document.querySelector('a[href="#receivedFeed"]')?.addEventListener("click", () => showView("transferView"));
+document.querySelector('a[href="#clipboardPanel"]')?.addEventListener("click", () => showView("clipboardView"));
+
+clipboardSyncToggle?.addEventListener("change", () => {
+  setClipboardSync(clipboardSyncToggle.checked);
+  setClipboardHint(clipboardSyncToggle.checked ? "实时监听已开启。复制新文字后会自动记录。" : "实时监听已关闭。", "info");
+});
+
+settingClipboardSync?.addEventListener("change", () => {
+  setClipboardSync(settingClipboardSync.checked);
+});
+
+deviceNameInput?.addEventListener("input", () => {
+  settings.deviceName = deviceNameInput.value.trim();
+  localStorage.setItem("lanDrop.deviceName", settings.deviceName);
+});
+
+copyInboxPath?.addEventListener("click", () => {
+  if (!inboxDirectory) return showStatus("还没有读取到保存目录", "error");
+  copyText(inboxDirectory, copyInboxPath);
+});
 
 async function checkForUpdates({ quiet = false } = {}) {
   if (!isLocalAccess || !updatePanel || !checkUpdate || !updateActions) return;
@@ -625,8 +773,7 @@ clipboardInput?.addEventListener("input", resizeClipboardInput);
 
 readClipboard?.addEventListener("click", async () => {
   try {
-    if (!navigator.clipboard?.readText) throw new Error("Clipboard read unavailable");
-    const text = await navigator.clipboard.readText();
+    const text = await readClipboardText();
     if (!text.trim()) {
       setClipboardHint("剪贴板里没有可读取的文字。", "error");
       return;
@@ -737,6 +884,7 @@ async function boot() {
   if (versionBadge && appVersion) versionBadge.textContent = `v${appVersion}`;
   if (updatePanel) updatePanel.hidden = !isLocalAccess;
   if (updateSummary && appVersion) updateSummary.textContent = `当前版本 v${appVersion}。点击检查更新，可直接下载最新版安装包。`;
+  applySettings();
   phoneUrls = info.urls || [];
   phoneUrl = phoneUrls[0] || location.href;
   recommendedUrl.textContent = phoneUrl;
@@ -767,7 +915,9 @@ async function boot() {
     const recommended = (info.addresses || []).find((entry) => entry.recommended) || (info.addresses || [])[0];
     networkName.textContent = recommended?.name || "当前 Wi-Fi";
   }
-  inboxPath.textContent = `电脑保存目录：${info.inbox}`;
+  inboxDirectory = info.inbox || "";
+  inboxPath.textContent = `电脑保存目录：${inboxDirectory}`;
+  if (settingsInboxPath) settingsInboxPath.textContent = inboxDirectory || "未读取到保存目录";
 
   const itemResponse = await fetch("/api/items");
   const data = await itemResponse.json();
