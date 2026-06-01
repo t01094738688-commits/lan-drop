@@ -238,6 +238,11 @@ function showView(id) {
   if (id === "devicesView") loadDevices();
 }
 
+function showInitialView() {
+  const id = location.hash.replace("#", "");
+  if (id && views.some((view) => view.id === id)) showView(id);
+}
+
 function mergeSettings(next = {}) {
   settings.deviceName = next.deviceName || settings.deviceName || "";
   settings.accessCodeLength = Number(next.accessCodeLength) === 6 ? 6 : 4;
@@ -531,40 +536,36 @@ function renderUpdateResult(data) {
   if (!updatePanel || !updateSummary || !updateActions) return;
   updateActions.innerHTML = "";
   const current = data.currentVersion || appVersion || "未知";
+  const recommendedAsset = data.recommendedAsset || data.windowsAsset || data.macAsset;
 
   if (data.updateAvailable) {
     const version = data.name || data.tagName || "新版本";
-    updateSummary.textContent = `发现 ${version}，当前版本 v${current}。建议下载新版安装包后覆盖安装。`;
+    updateSummary.textContent = `发现 ${version}，当前版本 v${current}。点击下载后会打开安装包，按提示覆盖旧版即可。`;
+    if (recommendedAsset) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `下载并安装更新 · ${updateAssetLabel(recommendedAsset)}`;
+      button.title = recommendedAsset.name || "";
+      button.addEventListener("click", () => {
+        window.open(recommendedAsset.browserDownloadUrl, "_blank", "noopener");
+      });
+      updateActions.append(button);
+    }
   } else {
     updateSummary.textContent = `当前版本 v${current}，已经是最新可用版本。`;
-  }
-
-  const assets = [data.recommendedAsset, data.windowsAsset, data.macAsset]
-    .filter(Boolean)
-    .filter((asset, index, list) => list.findIndex((item) => item.name === asset.name) === index);
-
-  for (const asset of assets) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = `下载 ${updateAssetLabel(asset)}`;
-    button.title = asset.name || "";
-    button.addEventListener("click", () => {
-      window.open(asset.browserDownloadUrl, "_blank", "noopener");
-    });
-    updateActions.append(button);
   }
 
   if (data.htmlUrl) {
     const openRelease = document.createElement("button");
     openRelease.type = "button";
-    openRelease.className = "secondary";
-    openRelease.textContent = "打开发布页";
+    openRelease.dataset.secondaryUpdate = "true";
+    openRelease.textContent = data.updateAvailable ? "其他系统版本" : "查看下载页";
     openRelease.addEventListener("click", () => window.open(data.htmlUrl, "_blank", "noopener"));
     updateActions.append(openRelease);
 
     const copyLink = document.createElement("button");
     copyLink.type = "button";
-    copyLink.className = "ghost";
+    copyLink.dataset.secondaryUpdate = "true";
     copyLink.textContent = "复制下载页";
     copyLink.addEventListener("click", () => copyText(data.htmlUrl, copyLink));
     updateActions.append(copyLink);
@@ -572,7 +573,10 @@ function renderUpdateResult(data) {
 }
 
 for (const button of viewButtons) {
-  button.addEventListener("click", () => showView(button.dataset.viewTarget));
+  button.addEventListener("click", () => {
+    history.replaceState(null, "", `#${button.dataset.viewTarget}`);
+    showView(button.dataset.viewTarget);
+  });
 }
 
 document.querySelector('a[href="#dropZone"]')?.addEventListener("click", () => showView("transferView"));
@@ -1010,6 +1014,7 @@ async function boot() {
   render();
   resizeClipboardInput();
   await loadDevices();
+  showInitialView();
   if (isLocalAccess) setTimeout(() => checkForUpdates({ quiet: true }), 800);
 
   const events = new EventSource(authUrl("/api/events"));

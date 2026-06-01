@@ -100,12 +100,13 @@ button:disabled {
 
 .desktop-shell {
   width: min(1380px, calc(100vw - 28px));
-  min-height: calc(100vh - 28px);
+  height: calc(100vh - 28px);
   margin: 14px auto;
   padding: 0;
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   gap: 14px;
+  overflow: hidden;
 }
 
 .app-sidebar,
@@ -121,6 +122,8 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  height: 100%;
+  overflow: hidden;
 }
 
 .brand-block {
@@ -185,7 +188,10 @@ button:disabled {
 
 .app-workspace {
   min-width: 0;
+  min-height: 0;
   padding: 22px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .view {
@@ -660,6 +666,16 @@ textarea {
   gap: 10px;
 }
 
+.update-actions button[data-secondary-update="true"] {
+  background: #eef3f4;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.update-actions button[data-secondary-update="true"]:hover {
+  background: #e2e9ec;
+}
+
 .update-actions:empty {
   display: none;
 }
@@ -1029,7 +1045,9 @@ textarea {
     width: min(100vw - 12px, 1180px);
     margin: 6px auto;
     display: block;
+    height: auto;
     min-height: auto;
+    overflow: visible;
   }
 
   .app-sidebar {
@@ -1056,6 +1074,7 @@ textarea {
 
   .app-workspace {
     padding: 12px;
+    overflow: visible;
   }
 
   .home-grid,

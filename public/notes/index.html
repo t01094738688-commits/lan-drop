@@ -5,16 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>随记</title>
     <link rel="stylesheet" href="/access.css" />
-    <link rel="stylesheet" href="styles.css?v=2026060101" />
+    <link rel="stylesheet" href="styles.css?v=2026060102" />
   </head>
   <body>
-    <main class="notes-shell">
-      <nav class="module-nav" aria-label="模块切换">
-        <a href="/">互传</a>
-        <a href="/yaoji/">钥记</a>
-        <span>随记</span>
-      </nav>
-
+    <main class="desktop-shell notes-shell">
+      <aside class="app-sidebar" aria-label="主导航">
+        <div class="brand-block">
+          <div class="brand-mark">LD</div>
+          <div>
+            <strong>LAN Drop</strong>
+            <span>手机免安装互传</span>
+          </div>
+        </div>
+        <nav class="side-nav">
+          <a class="side-nav-item" href="/">互传</a>
+          <a class="side-nav-item" href="/#clipboardView">剪贴板</a>
+          <span class="side-nav-item active">随记</span>
+          <a class="side-nav-item" href="/yaoji/">钥记</a>
+          <a class="side-nav-item" href="/#devicesView">设备</a>
+          <a class="side-nav-item" href="/#settingsView">设置</a>
+        </nav>
+        <p class="sidebar-tip">文字和图片作为一条随记保存，按日期查找。</p>
+      </aside>
+      <section class="app-workspace">
       <header class="notes-head">
         <div>
           <h1>随记</h1>
@@ -56,6 +69,7 @@
         <span id="sendHint"></span>
       </section>
       <section id="notesList" class="notes-list" aria-label="随记列表"></section>
+      </section>
     </main>
 
     <dialog id="noteDialog">

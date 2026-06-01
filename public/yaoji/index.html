@@ -5,16 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>钥记</title>
     <link rel="stylesheet" href="/access.css" />
-    <link rel="stylesheet" href="styles.css?v=2026060101" />
+    <link rel="stylesheet" href="styles.css?v=2026060102" />
   </head>
   <body>
-    <main class="shell">
-      <nav class="module-nav" aria-label="模块切换">
-        <a href="/">互传</a>
-        <span>钥记</span>
-        <a href="/notes/">随记</a>
-      </nav>
-
+    <main class="desktop-shell shell">
+      <aside class="app-sidebar" aria-label="主导航">
+        <div class="brand-block">
+          <div class="brand-mark">LD</div>
+          <div>
+            <strong>LAN Drop</strong>
+            <span>手机免安装互传</span>
+          </div>
+        </div>
+        <nav class="side-nav">
+          <a class="side-nav-item" href="/">互传</a>
+          <a class="side-nav-item" href="/#clipboardView">剪贴板</a>
+          <a class="side-nav-item" href="/notes/">随记</a>
+          <span class="side-nav-item active">钥记</span>
+          <a class="side-nav-item" href="/#devicesView">设备</a>
+          <a class="side-nav-item" href="/#settingsView">设置</a>
+        </nav>
+        <p class="sidebar-tip">钥记是本机加密小本子，请记好主密码。</p>
+      </aside>
+      <section class="app-workspace">
       <section class="auth-view" id="authView">
         <div class="brand">
           <div class="mark">钥</div>
@@ -123,6 +136,7 @@
       </section>
 
       <div class="toast hidden" id="toast"></div>
+      </section>
     </main>
 
     <script src="/access.js?v=20260529"></script>

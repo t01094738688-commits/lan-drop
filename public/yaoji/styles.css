@@ -51,9 +51,101 @@ button:disabled {
 }
 
 .shell {
-  width: min(1180px, calc(100vw - 56px));
-  margin: 0 auto;
-  padding: 22px 0 44px;
+  width: min(1380px, calc(100vw - 28px));
+  height: calc(100vh - 28px);
+  margin: 14px auto;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 14px;
+  overflow: hidden;
+}
+
+.app-sidebar,
+.app-workspace {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.app-sidebar {
+  height: 100%;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.app-workspace {
+  min-width: 0;
+  min-height: 0;
+  padding: 22px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.brand-block {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 900;
+}
+
+.brand-block strong,
+.brand-block span {
+  display: block;
+}
+
+.side-nav {
+  display: grid;
+  gap: 6px;
+}
+
+.side-nav-item {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 8px;
+  display: inline-flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 0 12px;
+  color: #334155;
+  background: transparent;
+  text-decoration: none;
+  font-weight: 850;
+}
+
+.side-nav-item:hover {
+  background: #edf2f4;
+  color: var(--ink);
+}
+
+.side-nav-item.active {
+  background: var(--soft);
+  color: var(--primary);
+}
+
+.sidebar-tip {
+  margin-top: auto;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f8fbfb;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .module-nav {
@@ -493,8 +585,40 @@ form {
 
 @media (max-width: 840px) {
   .shell {
-    width: min(100vw - 20px, 1180px);
-    padding: 14px 0 36px;
+    width: min(100vw - 12px, 1180px);
+    height: auto;
+    min-height: auto;
+    margin: 6px auto;
+    padding: 0;
+    display: block;
+    overflow: visible;
+  }
+
+  .app-sidebar {
+    margin-bottom: 10px;
+    padding: 8px;
+  }
+
+  .brand-block,
+  .sidebar-tip {
+    display: none;
+  }
+
+  .side-nav {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .side-nav-item {
+    min-height: 38px;
+    justify-content: center;
+    padding: 0 8px;
+    font-size: 14px;
+  }
+
+  .app-workspace {
+    padding: 12px;
+    overflow: visible;
   }
 
   .auth-view,
@@ -532,7 +656,7 @@ form {
 
 @media (max-width: 560px) {
   .shell {
-    width: min(100vw - 20px, 1180px);
+    width: min(100vw - 12px, 1180px);
   }
 
   .brand {
