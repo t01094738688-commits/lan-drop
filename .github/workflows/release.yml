@@ -1,0 +1,97 @@
+name: Release Packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            command: npm run pack:win -- --publish never
+            artifact: windows
+            files: |
+              release/*.exe
+          - name: macOS
+            os: macos-latest
+            command: npm run dist:mac -- --publish never
+            artifact: macos
+            files: |
+              release/*.dmg
+              release/*mac*.zip
+          - name: Linux
+            os: ubuntu-latest
+            command: npm run dist:linux -- --publish never
+            artifact: linux
+            files: |
+              release/*.AppImage
+              release/*.deb
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: ${{ matrix.command }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lan-drop-${{ matrix.artifact }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all packages
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: LAN Drop ${{ github.ref_name }}
+          prerelease: true
+          body: |
+            LAN Drop ${{ github.ref_name }}
+
+            This is an early beta release for testing.
+
+            Download:
+            - Windows: .exe
+            - macOS Apple Silicon: .dmg / mac.zip
+            - Linux: .AppImage / .deb
+
+            Notes:
+            - Phones do not need to install an app. Open LAN Drop on the computer, then scan the QR code from the phone.
+            - macOS builds are not Apple notarized yet. If macOS blocks the app, right-click the app and choose Open.
+            - Please test on trusted Wi-Fi networks only.
+          files: release-artifacts/**/*

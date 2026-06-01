@@ -10,7 +10,8 @@
     "pack:win": "electron-builder --win portable",
     "dist:win": "electron-builder --win nsis",
     "pack:mac": "electron-builder --mac zip",
-    "dist:mac": "electron-builder --mac dmg zip"
+    "dist:mac": "electron-builder --mac dmg zip",
+    "dist:linux": "electron-builder --linux AppImage deb"
   },
   "build": {
     "appId": "com.shanchuan.ben",
@@ -42,7 +43,15 @@
         "zip"
       ],
       "category": "public.app-category.productivity"
-    }
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    },
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
   },
   "devDependencies": {
     "electron": "^42.3.0",
