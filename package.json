@@ -1,6 +1,6 @@
 {
   "name": "shanchuan-ben",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "Local LAN transfer, encrypted account notes, and quick notes between phone and computer.",
   "main": "desktop/main.js",

@@ -19,6 +19,18 @@
   gap: 12px;
 }
 
+.access-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #e8f3f1;
+  color: #0f766e;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
 .access-box h2,
 .access-box p {
   margin: 0;
@@ -47,6 +59,32 @@
   font-weight: 800;
 }
 
+.access-box button:disabled {
+  opacity: 0.7;
+}
+
 .access-error {
   min-height: 20px;
+}
+
+@media (max-width: 560px) {
+  .access-gate {
+    align-items: start;
+    padding: 18px 12px;
+  }
+
+  .access-box {
+    margin-top: 8vh;
+    padding: 20px;
+  }
+
+  .access-box h2 {
+    font-size: 22px;
+  }
+
+  .access-box input,
+  .access-box button {
+    min-height: 50px;
+    font-size: 16px;
+  }
 }

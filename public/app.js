@@ -624,6 +624,11 @@ async function boot() {
     throw error;
   }
   isLocalAccess = !info.accessRequired;
+  document.body.classList.toggle("remote-device", !isLocalAccess);
+  if (!isLocalAccess) {
+    serviceStatus.textContent = "已连接电脑，可以发送文件、图片和文字";
+    serviceStatus.dataset.state = "ok";
+  }
   renderDevices();
   if (versionBadge && info.version) versionBadge.textContent = `v${info.version}`;
   phoneUrls = info.urls || [];

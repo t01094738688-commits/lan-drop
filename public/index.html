@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LAN Drop</title>
-    <link rel="stylesheet" href="/access.css" />
+    <link rel="stylesheet" href="/access.css?v=2026060101" />
     <link rel="stylesheet" href="/styles.css?v=2026060105" />
   </head>
   <body>
@@ -22,6 +22,12 @@
         </div>
         <p class="hero-copy">手机和电脑在同一个 Wi-Fi 下，扫码即可互传文件、图片和文字。</p>
       </header>
+
+      <div class="mobile-shortcuts" aria-label="手机快捷操作">
+        <a href="#dropZone">发文件</a>
+        <a href="#clipboardPanel">发文字</a>
+        <a href="#receivedFeed">收件箱</a>
+      </div>
 
       <section class="connect-card" id="connectPanel" aria-label="手机访问地址">
         <div class="connect-main">
@@ -72,7 +78,7 @@
         <div id="devicesList" class="devices-list"></div>
       </section>
 
-      <section class="panel clipboard-panel">
+      <section class="panel clipboard-panel" id="clipboardPanel">
         <div class="section-head">
           <div>
             <h2>剪贴板快传</h2>
@@ -120,7 +126,7 @@
         </div>
       </section>
 
-      <section class="feed">
+      <section class="feed" id="receivedFeed">
         <div class="section-head">
           <div>
             <h2>收到的内容</h2>
@@ -161,7 +167,7 @@
         </div>
       </article>
     </template>
-    <script src="/access.js?v=20260529"></script>
+    <script src="/access.js?v=2026060101"></script>
     <script src="/app.js?v=2026060105"></script>
   </body>
 </html>

@@ -134,6 +134,10 @@ button:disabled {
   color: #fff;
 }
 
+.mobile-shortcuts {
+  display: none;
+}
+
 .hero {
   display: flex;
   justify-content: space-between;
@@ -749,8 +753,37 @@ textarea {
 
 @media (max-width: 760px) {
   .app {
-    width: min(100vw - 20px, 1180px);
-    padding-top: 14px;
+    width: min(100vw - 14px, 1180px);
+    padding-top: 10px;
+    padding-bottom: 28px;
+  }
+
+  .module-nav {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  .module-nav a,
+  .module-nav span {
+    min-height: 42px;
+    padding: 0 8px;
+  }
+
+  .hero {
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-size: 26px;
+  }
+
+  h2 {
+    font-size: 17px;
+  }
+
+  .service-status {
+    margin-top: 6px;
+    font-size: 14px;
   }
 
   .hero,
@@ -768,14 +801,97 @@ textarea {
 
   .hero-copy {
     text-align: left;
+    font-size: 14px;
   }
 
   .main-url {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .qr-box {
     width: 100%;
+  }
+
+  .mobile-shortcuts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    margin: 0 0 10px;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(244, 247, 248, 0.94);
+    backdrop-filter: blur(12px);
+  }
+
+  .mobile-shortcuts a {
+    min-height: 38px;
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    border: 1px solid var(--line);
+    font-weight: 850;
+    padding: 0 8px;
+  }
+
+  .remote-device .connect-card,
+  .remote-device .guide-grid,
+  .remote-device .devices-panel {
+    display: none !important;
+  }
+
+  .remote-device .hero-copy {
+    display: none;
+  }
+
+  .remote-device .clipboard-panel {
+    order: 1;
+  }
+
+  .remote-device .drop-zone {
+    order: 0;
+    min-height: 118px;
+    padding: 16px;
+  }
+
+  .remote-device .feed {
+    order: 2;
+    margin-top: 14px;
+  }
+
+  .connect-card,
+  .network-card,
+  .steps-card,
+  .panel,
+  .drop-zone,
+  .item {
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+  }
+
+  .connect-card,
+  .network-card,
+  .steps-card,
+  .panel {
+    padding: 14px;
+  }
+
+  .drop-zone h2 {
+    font-size: 18px;
+  }
+
+  .drop-zone p,
+  .clipboard-panel .section-head p,
+  .devices-panel .section-head p {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  #clipboardInput,
+  textarea {
+    font-size: 16px;
   }
 
   .connect-actions,
@@ -795,5 +911,31 @@ textarea {
 
   .preview {
     width: 64px;
+  }
+
+  .item {
+    align-items: start;
+    min-height: 92px;
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .item-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .item-actions > * {
+    min-height: 38px;
+  }
+
+  .timeline-tools input,
+  .timeline-tools select,
+  .type-filter {
+    min-height: 44px;
+  }
+
+  .empty {
+    padding: 24px 14px;
   }
 }
