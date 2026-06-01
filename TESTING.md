@@ -1,6 +1,6 @@
 # LAN Drop 测试清单
 
-此清单用于 `v0.1.6-beta` 阶段的小范围测试。
+此清单用于 `v0.1.9-beta` 阶段的小范围测试。
 
 ## 基础测试
 
@@ -47,6 +47,7 @@
 - Android Chrome。
 - Windows Chrome / Edge。
 - Mac Safari。
+- Linux Ubuntu / Debian：AppImage、deb 安装包可启动并完成基础互传。
 - 微信内置浏览器：如果体验异常，应提示使用系统浏览器。
 
 ## 异常测试

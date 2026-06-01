@@ -1,4 +1,4 @@
-# LAN Drop v0.1.6-beta.1
+# LAN Drop v0.1.9-beta
 
 这是 LAN Drop / 闪传本子的早期测试版本。
 
@@ -12,6 +12,7 @@
 
 - Windows x64：`.exe`
 - macOS Apple Silicon：`.dmg` / `.zip`
+- Linux 实验版：`.AppImage` / `.deb`
 
 ## 本版本能力
 
@@ -28,13 +29,14 @@
 - 访问码改为 4 位数字，并在手机端弹出数字键盘，降低输入成本。
 - 随记支持按日期、分类保存文字和图片。
 - 钥记支持本地加密保存账号、邮箱、密钥、密码、Token 等信息。
-- 支持 GitHub Actions 自动构建 Windows / macOS 发布包。
+- 支持 GitHub Actions 自动构建 Windows / macOS / Linux 发布包。
 
 ## 已知限制
 
 - 这是早期测试版，Mac / Linux 仍需要更多真机测试。
 - macOS 版本尚未做 Apple 签名/公证，首次打开可能需要右键选择“打开”。
 - 当前 macOS 包为 Apple Silicon 版本，主要适合 M1 / M2 / M3 / M4。
+- Linux 包目前是实验版，仍需要 Ubuntu / Debian 等真机测试。
 - 已支持软件内检查更新并打开/下载最新安装包，暂未做静默自动替换。
 - 当前剪贴板模式是手动读取/发送，还不是后台实时同步。
 - 钥记主密码无法找回，请提前备份重要内容。

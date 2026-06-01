@@ -30,6 +30,13 @@ jobs:
             files: |
               release/*.dmg
               release/*mac*.zip
+          - name: Linux
+            os: ubuntu-latest
+            command: npm run dist:linux -- --publish never
+            artifact: linux
+            files: |
+              release/*.AppImage
+              release/*.deb
 
     steps:
       - name: Checkout source
@@ -81,9 +88,11 @@ jobs:
             Download:
             - Windows: .exe
             - macOS Apple Silicon: .dmg / mac.zip
+            - Linux experimental: .AppImage / .deb
 
             Notes:
             - Phones do not need to install an app. Open LAN Drop on the computer, then scan the QR code from the phone.
             - macOS builds are not Apple notarized yet. If macOS blocks the app, right-click the app and choose Open.
+            - Linux builds are experimental and need more real-device testing.
             - Please test on trusted Wi-Fi networks only.
           files: release-artifacts/**/*
