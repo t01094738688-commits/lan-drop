@@ -5,8 +5,10 @@ const os = require("os");
 const crypto = require("crypto");
 const childProcess = require("child_process");
 const qrcode = require("qrcode");
+const packageInfo = require("./package.json");
 
 const PORT = Number(process.env.PORT || 47321);
+const APP_VERSION = packageInfo.version || "0.1.0";
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
 const DEFAULT_INBOX_DIR = path.join(os.homedir(), "Documents", "闪传本子");
@@ -746,7 +748,7 @@ function createServer() {
       const urls = addresses.map((entry) => `http://${entry.address}:${requestPort}`);
       json(res, 200, {
         port: requestPort,
-        version: "0.1.0",
+        version: APP_VERSION,
         inbox: INBOX_DIR,
         accessRequired: !isLocalRequest(req),
         accessCode: isLocalRequest(req) ? ACCESS_CODE : null,
