@@ -15,6 +15,7 @@ const DATA_DIR = process.env.LAN_DROP_DATA || path.join(INBOX_DIR, ".lan-drop-da
 const YAOJI_VAULT_FILE = path.join(DATA_DIR, "yaoji-vault.json");
 const ACCESS_CODE_FILE = path.join(DATA_DIR, "access-code.txt");
 const ITEMS_FILE = path.join(DATA_DIR, "items.json");
+const DEVICES_FILE = path.join(DATA_DIR, "devices.json");
 const NOTES_DIR = path.join(DATA_DIR, "notes");
 const MAX_BODY_BYTES = 200 * 1024 * 1024;
 const MAX_ITEMS = 1000;
@@ -67,6 +68,7 @@ let ACCESS_CODE = loadAccessCode();
 const clients = new Set();
 const items = [];
 const sessions = new Map();
+const devices = new Map();
 const unlockAttempts = new Map();
 
 const mimeTypes = {
@@ -106,21 +108,93 @@ function parseCookies(header = "") {
   );
 }
 
+function getSessionToken(req) {
+  return parseCookies(req.headers.cookie || "")[SESSION_COOKIE];
+}
+
+function clientIp(req) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return (forwarded || req.socket.remoteAddress || "unknown").replace(/^::ffff:/, "");
+}
+
+function describeBrowser(userAgent = "") {
+  const ua = String(userAgent);
+  const browser =
+    ua.includes("Edg/") ? "Edge" :
+    ua.includes("OPR/") ? "Opera" :
+    ua.includes("Firefox/") ? "Firefox" :
+    ua.includes("Chrome/") && !ua.includes("Chromium") ? "Chrome" :
+    ua.includes("Safari/") ? "Safari" :
+    "浏览器";
+  const system =
+    ua.includes("iPhone") ? "iPhone" :
+    ua.includes("iPad") ? "iPad" :
+    ua.includes("Android") ? "Android" :
+    ua.includes("Mac OS X") ? "macOS" :
+    ua.includes("Windows") ? "Windows" :
+    ua.includes("Linux") ? "Linux" :
+    "未知设备";
+  return { browser, system };
+}
+
+function deviceNameFromRequest(req) {
+  const { browser, system } = describeBrowser(req.headers["user-agent"] || "");
+  return `${system} ${browser}`;
+}
+
+function loadDevices() {
+  if (!fs.existsSync(DEVICES_FILE)) return;
+  try {
+    const saved = JSON.parse(fs.readFileSync(DEVICES_FILE, "utf8"));
+    for (const device of Array.isArray(saved.devices) ? saved.devices : []) {
+      if (device.id) devices.set(device.id, device);
+    }
+  } catch {}
+}
+
+function saveDevices() {
+  const list = [...devices.values()]
+    .sort((a, b) => String(b.lastSeenAt || "").localeCompare(String(a.lastSeenAt || "")))
+    .slice(0, 100);
+  fs.writeFileSync(DEVICES_FILE, JSON.stringify({ devices: list }, null, 2), "utf8");
+}
+
+function touchDevice(req, token, existingId) {
+  const now = new Date().toISOString();
+  const id = existingId || crypto.createHash("sha256").update(token).digest("hex").slice(0, 16);
+  const previous = devices.get(id) || {};
+  devices.set(id, {
+    ...previous,
+    id,
+    name: previous.name || deviceNameFromRequest(req),
+    ip: clientIp(req),
+    userAgent: String(req.headers["user-agent"] || ""),
+    firstSeenAt: previous.firstSeenAt || now,
+    lastSeenAt: now,
+    revokedAt: null
+  });
+  saveDevices();
+  return id;
+}
+
 function hasValidSession(req) {
-  const token = parseCookies(req.headers.cookie || "")[SESSION_COOKIE];
-  const expiresAt = token ? sessions.get(token) : null;
-  if (!expiresAt) return false;
-  if (expiresAt <= Date.now()) {
+  const token = getSessionToken(req);
+  const session = token ? sessions.get(token) : null;
+  if (!session) return false;
+  if (session.expiresAt <= Date.now()) {
     sessions.delete(token);
     return false;
   }
-  sessions.set(token, Date.now() + SESSION_TTL_MS);
+  session.expiresAt = Date.now() + SESSION_TTL_MS;
+  session.deviceId = touchDevice(req, token, session.deviceId);
+  sessions.set(token, session);
   return true;
 }
 
-function createSession(res) {
+function createSession(req, res) {
   const token = crypto.randomBytes(24).toString("base64url");
-  sessions.set(token, Date.now() + SESSION_TTL_MS);
+  const deviceId = touchDevice(req, token);
+  sessions.set(token, { expiresAt: Date.now() + SESSION_TTL_MS, deviceId });
   res.setHeader(
     "Set-Cookie",
     `${SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL_MS / 1000}`
@@ -311,6 +385,44 @@ function refreshAccessCode() {
   sessions.clear();
   unlockAttempts.clear();
   return ACCESS_CODE;
+}
+
+function listDevices() {
+  const activeDeviceIds = new Set(
+    [...sessions.values()]
+      .filter((session) => session.expiresAt > Date.now())
+      .map((session) => session.deviceId)
+      .filter(Boolean)
+  );
+  return [...devices.values()]
+    .map((device) => ({
+      id: device.id,
+      name: device.name,
+      ip: device.ip,
+      firstSeenAt: device.firstSeenAt,
+      lastSeenAt: device.lastSeenAt,
+      revokedAt: device.revokedAt || null,
+      active: activeDeviceIds.has(device.id)
+    }))
+    .sort((a, b) => String(b.lastSeenAt || "").localeCompare(String(a.lastSeenAt || "")));
+}
+
+function revokeDevice(deviceId) {
+  let revoked = false;
+  for (const [token, session] of sessions.entries()) {
+    if (session.deviceId === deviceId) {
+      sessions.delete(token);
+      revoked = true;
+    }
+  }
+  const device = devices.get(deviceId);
+  if (device) {
+    device.revokedAt = new Date().toISOString();
+    devices.set(deviceId, device);
+    saveDevices();
+    revoked = true;
+  }
+  return revoked;
 }
 
 function decodeHeader(value, fallback) {
@@ -618,6 +730,7 @@ function writeSharedYaojiVault(vault) {
   fs.writeFileSync(YAOJI_VAULT_FILE, JSON.stringify(vault, null, 2), "utf8");
 }
 
+loadDevices();
 items.push(...mergeItems(loadSavedItems(), loadExistingItems()));
 saveItems();
 
@@ -666,7 +779,7 @@ function createServer() {
       const payload = JSON.parse(body || "{}");
       if (accessCodeMatches(payload.code)) {
         recordUnlockAttempt(req, true);
-        createSession(res);
+        createSession(req, res);
         json(res, 200, { ok: true });
       } else {
         recordUnlockAttempt(req, false);
@@ -681,6 +794,29 @@ function createServer() {
         return;
       }
       json(res, 200, { ok: true, accessCode: refreshAccessCode() });
+      return;
+    }
+
+    if (req.method === "GET" && route === "/api/devices") {
+      if (!isLocalRequest(req)) {
+        json(res, 403, { error: "Devices can only be managed from this computer." });
+        return;
+      }
+      json(res, 200, { devices: listDevices() });
+      return;
+    }
+
+    if (req.method === "DELETE" && route.startsWith("/api/devices/")) {
+      if (!isLocalRequest(req)) {
+        json(res, 403, { error: "Devices can only be managed from this computer." });
+        return;
+      }
+      const id = decodeURIComponent(route.replace("/api/devices/", ""));
+      if (!revokeDevice(id)) {
+        json(res, 404, { error: "Device not found." });
+        return;
+      }
+      json(res, 200, { ok: true, devices: listDevices() });
       return;
     }
 

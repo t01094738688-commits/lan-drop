@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LAN Drop</title>
     <link rel="stylesheet" href="/access.css" />
-    <link rel="stylesheet" href="/styles.css?v=2026060103" />
+    <link rel="stylesheet" href="/styles.css?v=2026060104" />
   </head>
   <body>
     <main class="app">
@@ -59,6 +59,17 @@
             <li>选择文件、图片或文字发送</li>
           </ol>
         </article>
+      </section>
+
+      <section class="panel devices-panel" id="devicesPanel" hidden>
+        <div class="section-head">
+          <div>
+            <h2>已连接设备</h2>
+            <p>显示通过访问码进入过的手机、浏览器和最后访问时间。</p>
+          </div>
+          <button id="refreshDevices" type="button" class="ghost">刷新</button>
+        </div>
+        <div id="devicesList" class="devices-list"></div>
       </section>
 
       <section class="drop-zone" id="dropZone">
@@ -134,6 +145,6 @@
       </article>
     </template>
     <script src="/access.js?v=20260529"></script>
-    <script src="/app.js?v=2026060103"></script>
+    <script src="/app.js?v=2026060104"></script>
   </body>
 </html>

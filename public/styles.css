@@ -59,6 +59,11 @@ a:hover {
   background: var(--accent-strong);
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .secondary {
   background: var(--dark);
 }
@@ -401,6 +406,79 @@ textarea {
   margin-bottom: 14px;
 }
 
+.devices-panel {
+  margin-bottom: 14px;
+}
+
+.devices-panel .section-head p {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.devices-list {
+  display: grid;
+  gap: 8px;
+}
+
+.device-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfd;
+  padding: 10px;
+}
+
+.device-row.active {
+  border-color: rgba(15, 118, 110, 0.36);
+  background: var(--soft);
+}
+
+.device-meta {
+  min-width: 0;
+}
+
+.device-meta strong,
+.device-meta span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.device-meta strong {
+  color: var(--text);
+}
+
+.device-meta span {
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+.device-status {
+  border-radius: 999px;
+  background: #eef3f4;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+
+.device-status.active {
+  background: #dcfce7;
+  color: #047857;
+}
+
+.device-empty {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted);
+  padding: 18px;
+  text-align: center;
+}
+
 .queue-list {
   display: grid;
   gap: 8px;
@@ -635,6 +713,7 @@ textarea {
   .drop-zone,
   .section-head,
   .address-row,
+  .device-row,
   .queue-row,
   .timeline-tools {
     display: grid;

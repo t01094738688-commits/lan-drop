@@ -24,6 +24,9 @@ const queueList = document.querySelector("#queueList");
 const queueSummary = document.querySelector("#queueSummary");
 const searchInput = document.querySelector("#searchInput");
 const typeFilter = document.querySelector("#typeFilter");
+const devicesPanel = document.querySelector("#devicesPanel");
+const devicesList = document.querySelector("#devicesList");
+const refreshDevices = document.querySelector("#refreshDevices");
 
 let items = [];
 let phoneUrl = location.href;
@@ -31,6 +34,7 @@ let phoneUrls = [];
 let queue = [];
 let isLocalAccess = false;
 let currentAccessCode = "";
+let devices = [];
 
 async function copyText(text, button) {
   try {
@@ -159,6 +163,15 @@ function formatTime(value) {
   });
 }
 
+function formatRelativeTime(value) {
+  if (!value) return "未知";
+  const diff = Date.now() - new Date(value).getTime();
+  if (diff < 60 * 1000) return "刚刚";
+  if (diff < 60 * 60 * 1000) return `${Math.floor(diff / 60000)} 分钟前`;
+  if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / 3600000)} 小时前`;
+  return formatTime(value);
+}
+
 function authUrl(url) {
   return window.lanDropAccess ? window.lanDropAccess.withAccessUrl(url) : url;
 }
@@ -246,6 +259,69 @@ function render() {
     deleteButton.addEventListener("click", () => deleteItem(item));
     itemsEl.append(node);
   }
+}
+
+function renderDevices() {
+  if (!devicesPanel || !devicesList) return;
+  devicesPanel.hidden = !isLocalAccess;
+  if (!isLocalAccess) return;
+  devicesList.innerHTML = "";
+
+  if (!devices.length) {
+    const empty = document.createElement("div");
+    empty.className = "device-empty";
+    empty.textContent = "还没有手机或其他浏览器通过访问码连接。";
+    devicesList.append(empty);
+    return;
+  }
+
+  for (const device of devices) {
+    const row = document.createElement("article");
+    row.className = `device-row ${device.active ? "active" : ""}`;
+    const meta = document.createElement("div");
+    meta.className = "device-meta";
+    const title = document.createElement("strong");
+    title.textContent = device.name || "未知设备";
+    const detail = document.createElement("span");
+    detail.textContent = `${device.ip || "未知 IP"} · 最后访问 ${formatRelativeTime(device.lastSeenAt)}`;
+    meta.append(title, detail);
+
+    const status = document.createElement("span");
+    status.className = device.active ? "device-status active" : "device-status";
+    status.textContent = device.active ? "在线" : device.revokedAt ? "已踢出" : "离线";
+
+    const kick = document.createElement("button");
+    kick.type = "button";
+    kick.className = "danger";
+    kick.textContent = "踢出";
+    kick.disabled = Boolean(device.revokedAt) && !device.active;
+    kick.addEventListener("click", () => revokeDevice(device));
+
+    row.append(meta, status, kick);
+    devicesList.append(row);
+  }
+}
+
+async function loadDevices() {
+  if (!isLocalAccess) return;
+  const response = await fetch("/api/devices");
+  if (!response.ok) return;
+  const data = await response.json();
+  devices = data.devices || [];
+  renderDevices();
+}
+
+async function revokeDevice(device) {
+  if (!confirm(`踢出“${device.name || "这台设备"}”？它需要重新输入访问码才能访问。`)) return;
+  const response = await fetch(`/api/devices/${encodeURIComponent(device.id)}`, { method: "DELETE" });
+  if (!response.ok) {
+    showStatus("踢出设备失败", "error");
+    return;
+  }
+  const data = await response.json();
+  devices = data.devices || [];
+  renderDevices();
+  showStatus("已踢出设备", "ok");
 }
 
 async function postItem(payload) {
@@ -463,7 +539,14 @@ refreshAccessCode.addEventListener("click", async () => {
   const data = await response.json();
   currentAccessCode = data.accessCode || "";
   accessCodeValue.textContent = currentAccessCode || "未获取";
+  devices = [];
+  renderDevices();
   showStatus("访问码已刷新，旧访问码已失效", "ok");
+});
+
+refreshDevices?.addEventListener("click", async () => {
+  await loadDevices();
+  flashAction(refreshDevices, "已刷新");
 });
 
 async function boot() {
@@ -478,6 +561,7 @@ async function boot() {
     throw error;
   }
   isLocalAccess = !info.accessRequired;
+  renderDevices();
   if (versionBadge && info.version) versionBadge.textContent = `v${info.version}`;
   phoneUrls = info.urls || [];
   phoneUrl = phoneUrls[0] || location.href;
@@ -515,6 +599,7 @@ async function boot() {
   const data = await itemResponse.json();
   items = data.items || [];
   render();
+  await loadDevices();
 
   const events = new EventSource(authUrl("/api/events"));
   events.onmessage = (event) => {
@@ -527,6 +612,7 @@ async function boot() {
     const item = payload.item || payload;
     items = [item, ...items.filter((entry) => entry.id !== item.id)];
     render();
+    loadDevices();
   };
 }
 
