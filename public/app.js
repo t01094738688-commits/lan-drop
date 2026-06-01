@@ -27,6 +27,11 @@ const typeFilter = document.querySelector("#typeFilter");
 const devicesPanel = document.querySelector("#devicesPanel");
 const devicesList = document.querySelector("#devicesList");
 const refreshDevices = document.querySelector("#refreshDevices");
+const clipboardInput = document.querySelector("#clipboardInput");
+const readClipboard = document.querySelector("#readClipboard");
+const sendClipboard = document.querySelector("#sendClipboard");
+const clearClipboard = document.querySelector("#clearClipboard");
+const clipboardHint = document.querySelector("#clipboardHint");
 
 let items = [];
 let phoneUrl = location.href;
@@ -176,6 +181,22 @@ function authUrl(url) {
   return window.lanDropAccess ? window.lanDropAccess.withAccessUrl(url) : url;
 }
 
+function looksLikeUrl(text = "") {
+  return /^https?:\/\/\S+$/i.test(text.trim());
+}
+
+function resizeClipboardInput() {
+  if (!clipboardInput) return;
+  clipboardInput.style.height = "auto";
+  clipboardInput.style.height = `${Math.min(180, Math.max(64, clipboardInput.scrollHeight))}px`;
+}
+
+function setClipboardHint(message, kind = "info") {
+  if (!clipboardHint) return;
+  clipboardHint.textContent = message;
+  clipboardHint.dataset.kind = kind;
+}
+
 function itemMatchesFilters(item) {
   const query = searchInput.value.trim().toLowerCase();
   const filter = typeFilter.value;
@@ -230,7 +251,7 @@ function render() {
     if (item.type === "text") {
       preview.textContent = "TXT";
       title.textContent = item.text.slice(0, 90);
-      typeBadge.textContent = "文字";
+      typeBadge.textContent = looksLikeUrl(item.text) ? "链接" : item.source === "clipboard" ? "剪贴板" : "文字";
       detail.textContent = `${formatTime(item.createdAt)} · ${item.filename}`;
       copyButton.hidden = false;
       copyButton.textContent = "复制文字";
@@ -496,10 +517,52 @@ document.addEventListener("paste", async (event) => {
   if (files.length) {
     event.preventDefault();
     await sendFiles(files);
-  } else if (text && document.activeElement !== textInput) {
+    setClipboardHint("已从剪贴板发送图片/截图", "ok");
+  } else if (text && ![textInput, clipboardInput].includes(document.activeElement)) {
     event.preventDefault();
-    await postItem({ type: "text", text });
+    await postItem({ type: "text", text, source: "clipboard" });
+    showStatus("已发送剪贴板文字", "ok");
   }
+});
+
+clipboardInput?.addEventListener("input", resizeClipboardInput);
+
+readClipboard?.addEventListener("click", async () => {
+  try {
+    if (!navigator.clipboard?.readText) throw new Error("Clipboard read unavailable");
+    const text = await navigator.clipboard.readText();
+    if (!text.trim()) {
+      setClipboardHint("剪贴板里没有可读取的文字。", "error");
+      return;
+    }
+    clipboardInput.value = text;
+    resizeClipboardInput();
+    setClipboardHint(looksLikeUrl(text) ? "已读取链接，可以发送到手机。" : "已读取文字，可以发送到手机。", "ok");
+  } catch {
+    setClipboardHint("浏览器不允许直接读取剪贴板，可以手动 Ctrl + V 粘贴。", "error");
+    clipboardInput.focus();
+  }
+});
+
+sendClipboard?.addEventListener("click", async () => {
+  const text = clipboardInput.value.trim();
+  if (!text) {
+    setClipboardHint("先粘贴或读取一段文字/链接。", "error");
+    clipboardInput.focus();
+    return;
+  }
+  await postItem({ type: "text", text, source: "clipboard" });
+  clipboardInput.value = "";
+  resizeClipboardInput();
+  setClipboardHint("已发送到收到内容列表，手机端可复制。", "ok");
+  showStatus("剪贴板内容已发送", "ok");
+});
+
+clearClipboard?.addEventListener("click", () => {
+  clipboardInput.value = "";
+  resizeClipboardInput();
+  setClipboardHint("已清空输入区。", "info");
+  clipboardInput.focus();
 });
 
 pasteText.addEventListener("click", () => {
@@ -599,6 +662,7 @@ async function boot() {
   const data = await itemResponse.json();
   items = data.items || [];
   render();
+  resizeClipboardInput();
   await loadDevices();
 
   const events = new EventSource(authUrl("/api/events"));

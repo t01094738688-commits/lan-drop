@@ -919,7 +919,15 @@ function createServer() {
         }
         const filename = `${stamp()}-${id.slice(0, 8)}.txt`;
         fs.writeFileSync(path.join(INBOX_DIR, filename), text, "utf8");
-        const item = { id, type: "text", createdAt, text, filename, url: `/files/${encodeURIComponent(filename)}` };
+        const item = {
+          id,
+          type: "text",
+          createdAt,
+          text,
+          source: payload.source === "clipboard" ? "clipboard" : "manual",
+          filename,
+          url: `/files/${encodeURIComponent(filename)}`
+        };
         addItem(item);
         json(res, 201, { item });
         return;

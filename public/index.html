@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LAN Drop</title>
     <link rel="stylesheet" href="/access.css" />
-    <link rel="stylesheet" href="/styles.css?v=2026060104" />
+    <link rel="stylesheet" href="/styles.css?v=2026060105" />
   </head>
   <body>
     <main class="app">
@@ -70,6 +70,23 @@
           <button id="refreshDevices" type="button" class="ghost">刷新</button>
         </div>
         <div id="devicesList" class="devices-list"></div>
+      </section>
+
+      <section class="panel clipboard-panel">
+        <div class="section-head">
+          <div>
+            <h2>剪贴板快传</h2>
+            <p>读取电脑剪贴板里的文字、链接，或直接 Ctrl + V 粘贴截图发送。</p>
+          </div>
+          <span class="clipboard-badge">手机免安装</span>
+        </div>
+        <textarea id="clipboardInput" rows="2" placeholder="粘贴文字、链接，或点击“读取剪贴板”"></textarea>
+        <div class="clipboard-actions">
+          <button id="readClipboard" type="button" class="secondary">读取剪贴板</button>
+          <button id="sendClipboard" type="button">发送剪贴板</button>
+          <button id="clearClipboard" type="button" class="ghost">清空</button>
+        </div>
+        <p id="clipboardHint" class="clipboard-hint">图片和截图可以直接 Ctrl + V，会自动进入发送队列。</p>
       </section>
 
       <section class="drop-zone" id="dropZone">
@@ -145,6 +162,6 @@
       </article>
     </template>
     <script src="/access.js?v=20260529"></script>
-    <script src="/app.js?v=2026060104"></script>
+    <script src="/app.js?v=2026060105"></script>
   </body>
 </html>

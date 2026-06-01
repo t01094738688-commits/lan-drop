@@ -406,6 +406,52 @@ textarea {
   margin-bottom: 14px;
 }
 
+.clipboard-panel {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.clipboard-panel .section-head p {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.clipboard-badge {
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+
+#clipboardInput {
+  min-height: 64px;
+  max-height: 180px;
+  resize: none;
+  overflow-y: auto;
+}
+
+.clipboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.clipboard-hint {
+  font-size: 13px;
+}
+
+.clipboard-hint[data-kind="ok"] {
+  color: #047857;
+}
+
+.clipboard-hint[data-kind="error"] {
+  color: var(--danger);
+}
+
 .devices-panel {
   margin-bottom: 14px;
 }
@@ -734,6 +780,8 @@ textarea {
 
   .connect-actions,
   .connect-actions > *,
+  .clipboard-actions,
+  .clipboard-actions > *,
   .actions,
   .actions > *,
   .item-actions,
