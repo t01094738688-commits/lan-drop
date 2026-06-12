@@ -1503,6 +1503,17 @@ function noteFromItem(item, categoryId = "other") {
 
 function openFileWithDefaultApp(filePath) {
   return new Promise((resolve, reject) => {
+    if (process.platform === "win32" && fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
+      const child = childProcess.spawn("explorer.exe", [filePath], {
+        windowsHide: false,
+        detached: true,
+        stdio: "ignore"
+      });
+      child.on("error", reject);
+      child.unref();
+      resolve();
+      return;
+    }
     const pathBase64 = Buffer.from(filePath, "utf8").toString("base64");
     const script = `
 $path = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("${pathBase64}"))
