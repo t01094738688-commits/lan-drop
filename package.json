@@ -55,7 +55,7 @@
       ],
       "category": "Utility"
     },
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+    "artifactName": "LAN-Drop-${version}-${os}-${arch}.${ext}"
   },
   "devDependencies": {
     "electron": "^42.3.0",
