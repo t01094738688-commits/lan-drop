@@ -7,6 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "desktop": "electron .",
+    "build:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./build-windows.ps1 -Type installer",
+    "build:win:portable": "powershell -NoProfile -ExecutionPolicy Bypass -File ./build-windows.ps1 -Type portable",
     "pack:win": "electron-builder --win portable",
     "dist:win": "electron-builder --win nsis",
     "pack:mac": "electron-builder --mac zip",

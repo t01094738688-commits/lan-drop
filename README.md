@@ -99,14 +99,16 @@ npm start
 Windows 免安装包：
 
 ```powershell
-npm run pack:win
+npm run build:win:portable
 ```
 
 Windows 安装包：
 
 ```powershell
-npm run dist:win
+npm run build:win
 ```
+
+`build-windows.ps1` 会先关闭正在运行的闪传本子并清理旧的 `release/win-unpacked`，避免打包时 DLL 被占用。
 
 macOS 包需要在 macOS 环境构建：
 
