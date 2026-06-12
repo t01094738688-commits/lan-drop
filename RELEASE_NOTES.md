@@ -11,8 +11,7 @@
 当前提供：
 
 - Windows x64：`.exe`
-- macOS Apple Silicon：`.dmg` / `.zip`
-- Linux 实验版：`.AppImage` / `.deb`
+- macOS / Linux：仍在实验构建中，后续补发
 
 ## 本版本能力
 
@@ -41,7 +40,7 @@
 - 访问码改为 4 位数字，并在手机端弹出数字键盘，降低输入成本。
 - 随记支持按日期、分类保存文字和图片。
 - 钥记支持本地加密保存账号、邮箱、密钥、密码、Token 等信息。
-- 支持 GitHub Actions 自动构建 Windows / macOS / Linux 发布包。
+- 支持 GitHub Actions 自动构建 Windows 发布包；macOS / Linux 仍在实验构建中。
 
 ## 已知限制
 

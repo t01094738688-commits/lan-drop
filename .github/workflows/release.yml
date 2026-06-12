@@ -23,20 +23,6 @@ jobs:
             artifact: windows
             files: |
               release/*.exe
-          - name: macOS
-            os: macos-latest
-            command: npm run dist:mac -- --publish never
-            artifact: macos
-            files: |
-              release/*.dmg
-              release/*mac*.zip
-          - name: Linux
-            os: ubuntu-latest
-            command: npm run dist:linux -- --publish never
-            artifact: linux
-            files: |
-              release/*.AppImage
-              release/*.deb
 
     steps:
       - name: Checkout source
@@ -87,8 +73,7 @@ jobs:
 
             下载：
             - Windows：.exe 安装包
-            - macOS Apple Silicon：.dmg / mac.zip
-            - Linux 实验版：.AppImage / .deb
+            - macOS / Linux：仍在实验构建中，后续补发
 
             亮点：
             - 手机不用安装 App，电脑打开软件后，手机扫码或打开地址即可互传。
@@ -97,6 +82,5 @@ jobs:
 
             注意：
             - 请让手机和电脑连接同一个可信 Wi-Fi 或热点。
-            - macOS 包暂未做 Apple 签名/公证，如果系统拦截，请右键应用并选择“打开”。
-            - Linux 包仍是实验版，需要更多真机测试。
+            - macOS / Linux 包暂未包含在本次 Release，后续会继续调试云端构建。
           files: release-artifacts/**/*
