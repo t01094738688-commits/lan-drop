@@ -12,6 +12,7 @@ const defaultCategories = [
 ];
 
 const $ = (id) => document.getElementById(id);
+const appWorkspace = document.querySelector(".app-workspace");
 
 const dayTitle = $("dayTitle");
 const datePicker = $("datePicker");
@@ -47,6 +48,11 @@ let editingId = null;
 let activeNoteId = null;
 let saveTimer = null;
 let booted = false;
+
+function resetWorkspaceScroll() {
+  if (appWorkspace) appWorkspace.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  else window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+}
 
 function createId() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -333,7 +339,7 @@ function renderNotes() {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   listSummary.textContent = `${visible.length} 条随记`;
-  sendHint.textContent = visible.some((note) => note.text.trim() && note.images.length) ? "包含文字 + 图片" : "";
+  sendHint.textContent = visible.some((note) => note.text.trim() && note.images.length) ? "文字和图片可一起同步到互传" : "";
 
   if (!visible.length) {
     const empty = document.createElement("div");
@@ -360,7 +366,7 @@ function renderNotes() {
     tag.textContent = categoryById(note.categoryId).name;
     const sendType = document.createElement("span");
     sendType.className = "send-type";
-    sendType.textContent = note.text.trim() && note.images.length ? "将发送：文字 + 图片" : note.images.length ? "将发送：图片" : "将发送：文字";
+    sendType.textContent = note.text.trim() && note.images.length ? "同步：文字 + 图片" : note.images.length ? "同步：图片" : "同步：文字";
     meta.append(time, tag, sendType);
 
     const text = document.createElement("p");
@@ -386,7 +392,7 @@ function renderNotes() {
     actions.className = "card-actions";
     actions.append(
       actionButton("复制", () => copyNoteText(note)),
-      actionButton("发送", () => shareNote(note)),
+      actionButton("同步到互传", () => shareNote(note)),
       actionButton("编辑", () => editNote(note)),
       actionButton("删除", () => deleteNote(note.id), "danger")
     );
@@ -522,20 +528,13 @@ async function copyNoteText(note) {
 
 async function shareNote(note) {
   const text = noteShareText(note);
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: "随记", text });
-      showSaved("已分享");
-      return;
-    } catch {}
-  }
   try {
     await fetch("/api/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "text", text })
     });
-    showSaved(note.images.length ? "已发送文字 + 图片链接" : "已发送");
+    showSaved(note.images.length ? "已同步到互传：文字 + 图片链接" : "已同步到互传");
   } catch {
     await copyNoteText(note);
   }
@@ -628,6 +627,7 @@ async function init() {
   selectedDate = todayKey();
   booted = true;
   renderAll();
+  resetWorkspaceScroll();
   scheduleSave();
 }
 

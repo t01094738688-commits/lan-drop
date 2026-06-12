@@ -11,6 +11,7 @@ let selectedId = null;
 let toastTimer = null;
 let clipboardClearTimer = null;
 let sharedPayload = null;
+let localFallbackPayload = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -118,17 +119,20 @@ function normalizeVault(data) {
 
 function readPayload() {
   if (sharedPayload) return sharedPayload;
+  if (localFallbackPayload) return localFallbackPayload;
   const raw = localStorage.getItem(storageKey) || localStorage.getItem(oldStorageKey);
-  return raw ? JSON.parse(raw) : null;
+  localFallbackPayload = raw ? JSON.parse(raw) : null;
+  return localFallbackPayload;
 }
 
 async function loadSharedPayload() {
   try {
+    const raw = localStorage.getItem(storageKey) || localStorage.getItem(oldStorageKey);
+    localFallbackPayload = raw ? JSON.parse(raw) : null;
     const response = await fetch("/api/yaoji/vault");
     if (!response.ok) return;
     const data = await response.json();
     sharedPayload = data.vault || null;
-    if (sharedPayload) localStorage.setItem(storageKey, JSON.stringify(sharedPayload));
   } catch {
     sharedPayload = null;
   }
@@ -136,6 +140,7 @@ async function loadSharedPayload() {
 
 async function persistPayload(payload) {
   sharedPayload = payload;
+  localFallbackPayload = payload;
   localStorage.setItem(storageKey, JSON.stringify(payload));
   await fetch("/api/yaoji/vault", {
     method: "PUT",
@@ -375,7 +380,15 @@ async function unlock(password, options = {}) {
   unlockButton.textContent = payload ? "正在打开..." : "正在创建...";
   try {
     if (payload) {
-      const unlocked = await decryptVault(payload, password);
+      let unlocked;
+      try {
+        unlocked = await decryptVault(payload, password);
+      } catch (error) {
+        if (!sharedPayload || !localFallbackPayload || localFallbackPayload === sharedPayload) throw error;
+        unlocked = await decryptVault(localFallbackPayload, password);
+        await persistPayload(localFallbackPayload);
+        showToast("已用本机缓存恢复钥记");
+      }
       masterKey = unlocked.key;
       vault = unlocked.data;
     } else {
@@ -466,6 +479,7 @@ resetVaultButton.addEventListener("click", () => {
   localStorage.removeItem(oldStorageKey);
   sessionStorage.removeItem(sessionPasswordKey);
   sharedPayload = null;
+  localFallbackPayload = null;
   fetch("/api/yaoji/vault", { method: "DELETE" }).catch(() => {});
   masterKey = null;
   vault = { records: [] };
@@ -515,13 +529,6 @@ $("importInput").addEventListener("change", async (event) => {
 
 async function init() {
   await loadSharedPayload();
-
-  const localPayload = localStorage.getItem(storageKey) || localStorage.getItem(oldStorageKey);
-  const parsedLocalPayload = localPayload ? JSON.parse(localPayload) : null;
-  if (parsedLocalPayload && (!sharedPayload || new Date(parsedLocalPayload.updatedAt || 0) > new Date(sharedPayload.updatedAt || 0))) {
-    sharedPayload = parsedLocalPayload;
-    await persistPayload(sharedPayload);
-  }
 
   refreshAuthState();
   const savedPassword = sessionStorage.getItem(sessionPasswordKey);

@@ -19,7 +19,7 @@ jobs:
         include:
           - name: Windows
             os: windows-latest
-            command: npm run pack:win -- --publish never
+            command: npm run dist:win -- --publish never
             artifact: windows
             files: |
               release/*.exe
@@ -78,21 +78,25 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          name: LAN Drop ${{ github.ref_name }}
+          name: 闪传本子 / LAN Drop ${{ github.ref_name }}
           prerelease: true
           body: |
-            LAN Drop ${{ github.ref_name }}
+            闪传本子 / LAN Drop ${{ github.ref_name }}
 
-            This is an early beta release for testing.
+            这是一个早期测试版，适合 Windows 用户和小范围朋友试用。
 
-            Download:
-            - Windows: .exe
-            - macOS Apple Silicon: .dmg / mac.zip
-            - Linux experimental: .AppImage / .deb
+            下载：
+            - Windows：.exe 安装包
+            - macOS Apple Silicon：.dmg / mac.zip
+            - Linux 实验版：.AppImage / .deb
 
-            Notes:
-            - Phones do not need to install an app. Open LAN Drop on the computer, then scan the QR code from the phone.
-            - macOS builds are not Apple notarized yet. If macOS blocks the app, right-click the app and choose Open.
-            - Linux builds are experimental and need more real-device testing.
-            - Please test on trusted Wi-Fi networks only.
+            亮点：
+            - 手机不用安装 App，电脑打开软件后，手机扫码或打开地址即可互传。
+            - 电脑复制文件、图片或截图后，在互传页按 Ctrl + V 可以直接发送。
+            - 支持文字、图片、文件互传，也可以把重要内容存入随记。
+
+            注意：
+            - 请让手机和电脑连接同一个可信 Wi-Fi 或热点。
+            - macOS 包暂未做 Apple 签名/公证，如果系统拦截，请右键应用并选择“打开”。
+            - Linux 包仍是实验版，需要更多真机测试。
           files: release-artifacts/**/*

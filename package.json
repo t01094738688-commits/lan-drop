@@ -1,6 +1,6 @@
 {
   "name": "shanchuan-ben",
-  "version": "0.1.9",
+  "version": "0.1.35",
   "private": true,
   "description": "Local LAN transfer, encrypted account notes, and quick notes between phone and computer.",
   "main": "desktop/main.js",
@@ -16,10 +16,12 @@
   "build": {
     "appId": "com.shanchuan.ben",
     "productName": "闪传本子",
+    "executableName": "闪传本子",
     "directories": {
       "output": "release"
     },
     "files": [
+      "build/**/*",
       "desktop/**/*",
       "installer/**/*",
       "public/**/*",
@@ -27,6 +29,7 @@
       "package.json"
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         "portable",
         "nsis"
@@ -45,6 +48,7 @@
       "category": "public.app-category.productivity"
     },
     "linux": {
+      "icon": "build/icon.png",
       "target": [
         "AppImage",
         "deb"

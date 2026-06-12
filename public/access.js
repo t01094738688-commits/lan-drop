@@ -15,7 +15,8 @@
     },
     withAccessUrl,
     async status() {
-      return originalFetch("/api/access/status").then((response) => response.json());
+      return originalFetch("/api/access/status", { credentials: "same-origin" })
+        .then((response) => response.json());
     }
   };
 
@@ -28,7 +29,7 @@
       <form class="access-box">
         <div class="access-icon" aria-hidden="true">LAN</div>
         <h2>输入访问码</h2>
-        <p>手机和电脑连接同一个 Wi-Fi 后，输入电脑端显示的访问码即可开始互传。</p>
+        <p>访问码用于防止同一 Wi-Fi 下的陌生人打开你的电脑。请输入电脑端显示的 ${length} 位数字。</p>
         <input
           name="code"
           inputmode="numeric"
@@ -40,7 +41,7 @@
           placeholder="输入 ${length} 位访问码"
           required
         />
-        <button type="submit">进入 LAN Drop</button>
+        <button type="submit">进入互传页面</button>
         <span class="access-error" role="status"></span>
       </form>
     `;
@@ -63,22 +64,28 @@
       error.textContent = "";
       button.disabled = true;
       button.textContent = "正在进入...";
-      const response = await originalFetch("/api/access/unlock", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code })
-      });
-      if (response.ok) {
-        gate.remove();
-        location.reload();
-        return;
+      try {
+        const response = await originalFetch("/api/access/unlock", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code })
+        });
+        if (response.ok) {
+          gate.remove();
+          location.reload();
+          return;
+        }
+        error.textContent = response.status === 429
+          ? "尝试次数过多，请稍后再试。"
+          : "访问码不对，请刷新电脑端页面后重新输入。";
+      } catch {
+        error.textContent = "连接电脑失败，请确认手机和电脑在同一个 Wi-Fi。";
+      } finally {
+        button.disabled = false;
+        button.textContent = "进入互传页面";
+        input.select();
       }
-      button.disabled = false;
-      button.textContent = "进入 LAN Drop";
-      error.textContent = response.status === 429
-        ? "尝试次数过多，请稍后再试。"
-        : "访问码不对，请刷新电脑端页面后重新输入。";
-      input.select();
     });
 
     document.body.append(gate);
@@ -86,7 +93,10 @@
   }
 
   document.addEventListener("DOMContentLoaded", async () => {
-    const status = await window.lanDropAccess.status().catch(() => ({ ok: true }));
+    const status = await window.lanDropAccess.status().catch(() => ({
+      ok: false,
+      accessCodeLength: 4
+    }));
     if (!status.ok) showGate(status.accessCodeLength);
   });
 })();

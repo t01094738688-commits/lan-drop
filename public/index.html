@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>LAN Drop</title>
-    <link rel="stylesheet" href="/access.css?v=2026060103" />
-    <link rel="stylesheet" href="/styles.css?v=2026060109" />
+    <title>闪传本子 / LAN Drop</title>
+    <link rel="stylesheet" href="/access.css?v=2026060801" />
+    <link rel="stylesheet" href="/styles.css?v=2026060903" />
   </head>
   <body>
     <main class="app desktop-shell">
@@ -13,16 +13,13 @@
         <div class="brand-block">
           <div class="brand-mark">LD</div>
           <div>
-            <strong>LAN Drop</strong>
-            <span id="versionBadge" class="version-badge"></span>
+            <strong>闪传本子</strong>
+            <span id="versionBadge" class="version-badge">LAN Drop</span>
           </div>
         </div>
         <nav class="side-nav">
           <button type="button" class="side-nav-item active" data-view-target="transferView">互传</button>
-          <button type="button" class="side-nav-item" data-view-target="clipboardView">剪贴板</button>
           <a class="side-nav-item" href="/notes/">随记</a>
-          <a class="side-nav-item" href="/yaoji/">钥记</a>
-          <button type="button" class="side-nav-item" data-view-target="devicesView">设备</button>
           <button type="button" class="side-nav-item" data-view-target="settingsView">设置</button>
         </nav>
         <p class="sidebar-tip">手机不用装 App，扫码即可互传。</p>
@@ -34,7 +31,7 @@
             <h1>局域网快传</h1>
             <p id="serviceStatus" class="service-status">正在检查服务状态...</p>
           </div>
-          <p class="hero-copy">电脑开着，手机扫码，文件、图片、文字都能在同一个 Wi-Fi 下快速传。</p>
+          <p class="hero-copy">手机不用装 App。电脑开着，手机扫码，文件、图片、文字都能在同一个 Wi-Fi 下快速传。</p>
         </header>
 
         <div class="mobile-shortcuts" aria-label="手机快捷操作">
@@ -60,8 +57,8 @@
               </div>
             </div>
             <div class="qr-box">
-              <img id="qrCode" alt="手机访问二维码" />
-              <span>手机扫码打开</span>
+              <img id="qrCode" alt="手机访问二维码" title="点击放大二维码" />
+              <span>用系统相机扫码，点二维码可放大</span>
             </div>
           </section>
 
@@ -69,14 +66,14 @@
             <section class="drop-zone" id="dropZone">
               <div>
                 <h2>发送文件到手机/电脑</h2>
-                <p>拖入图片、文件，或点击按钮选择。也可以 Ctrl + V 粘贴截图。</p>
+                <p>拖入或选择文件，也可以复制文件后按 Ctrl + V 直接发送。手机端可选择相册或文件发送到电脑。</p>
               </div>
               <div class="actions">
                 <label class="file-button">
                   选择文件/图片
                   <input id="fileInput" type="file" multiple />
                 </label>
-                <button id="pasteText" type="button" class="secondary">发送文字</button>
+                <button id="pasteText" type="button" class="secondary">发文字</button>
               </div>
             </section>
 
@@ -85,8 +82,8 @@
               <ol>
                 <li>手机和电脑连接同一个 Wi-Fi</li>
                 <li>手机扫码或打开访问地址</li>
-                <li>输入访问码</li>
-                <li>选择文件、图片或文字发送</li>
+                <li>输入电脑端显示的访问码</li>
+                <li>选择文件、图片或文字，内容会出现在互传列表</li>
               </ol>
             </article>
           </section>
@@ -102,19 +99,59 @@
           </section>
 
           <section class="panel text-panel" id="textPanel" hidden>
-            <textarea id="textInput" rows="5" placeholder="把要发送到另一台设备的文字贴在这里"></textarea>
+            <textarea id="textInput" rows="5" placeholder="把要同步到互传列表的文字贴在这里，手机和电脑都能看到"></textarea>
             <div class="actions right">
               <button id="cancelText" type="button" class="ghost">取消</button>
-              <button id="sendText" type="button">发送</button>
+              <button id="sendText" type="button">同步到互传</button>
             </div>
+          </section>
+
+          <section class="panel clipboard-panel collapsed" id="clipboardPanel">
+            <div class="section-head">
+              <div>
+                <h2>剪贴板快传</h2>
+                <p>电脑端可同步电脑剪贴板；手机端需要点击按钮读取手机剪贴板，浏览器不会后台自动读取。</p>
+              </div>
+              <div class="section-actions">
+                <label class="switch-row inline-switch">
+                  <input id="clipboardSyncToggle" type="checkbox" />
+                  <span>实时监听</span>
+                </label>
+                <button id="toggleClipboardPanel" type="button" class="ghost">展开</button>
+              </div>
+            </div>
+            <div class="clipboard-body" id="clipboardBody">
+              <textarea id="clipboardInput" rows="2" placeholder="粘贴文字、链接，或点击按钮读取当前设备剪贴板"></textarea>
+              <div class="clipboard-actions">
+                <button id="readClipboard" type="button" class="secondary">读取当前设备剪贴板</button>
+                <button id="sendClipboard" type="button">同步到互传</button>
+                <button id="clearClipboard" type="button" class="ghost">清空</button>
+              </div>
+              <p id="clipboardHint" class="clipboard-hint">电脑端可开启实时监听；手机端需要点按钮或长按输入框粘贴后再同步。</p>
+            </div>
+          </section>
+
+          <section class="panel clipboard-history-panel collapsed" id="clipboardHistoryPanel">
+            <div class="section-head">
+              <div>
+                <h2>已同步的剪贴板</h2>
+                <p id="clipboardHistorySummary">最近通过剪贴板同步的内容会显示在这里。</p>
+              </div>
+              <div class="section-actions">
+                <button id="toggleClipboardHistory" type="button" class="ghost">展开历史</button>
+                <button id="clearClipboardHistory" type="button" class="ghost">清空历史</button>
+              </div>
+            </div>
+            <div id="clipboardHistory" class="clipboard-history"></div>
           </section>
 
           <section class="feed" id="receivedFeed">
             <div class="section-head">
               <div>
-                <h2>收到的内容</h2>
+                <h2>互传列表</h2>
                 <p id="inboxPath"></p>
               </div>
+              <button id="clearTransferItems" type="button" class="ghost danger-outline">清空列表</button>
             </div>
             <div class="timeline-tools">
               <input id="searchInput" type="search" placeholder="搜索文件名、文字内容" />
@@ -132,39 +169,6 @@
           </section>
         </section>
 
-        <section class="view" id="clipboardView" data-view hidden>
-          <section class="panel clipboard-panel" id="clipboardPanel">
-            <div class="section-head">
-              <div>
-                <h2>剪贴板快传</h2>
-                <p>电脑复制文字或链接后，可以自动进入列表；图片和截图仍支持 Ctrl + V 发送。</p>
-              </div>
-              <label class="switch-row inline-switch">
-                <input id="clipboardSyncToggle" type="checkbox" />
-                <span>实时监听</span>
-              </label>
-            </div>
-            <textarea id="clipboardInput" rows="2" placeholder="粘贴文字、链接，或点击“读取剪贴板”"></textarea>
-            <div class="clipboard-actions">
-              <button id="readClipboard" type="button" class="secondary">读取剪贴板</button>
-              <button id="sendClipboard" type="button">发送剪贴板</button>
-              <button id="clearClipboard" type="button" class="ghost">清空</button>
-            </div>
-            <p id="clipboardHint" class="clipboard-hint">开启实时监听后，电脑复制的新文字会自动出现在下方历史里。</p>
-          </section>
-
-          <section class="panel clipboard-history-panel">
-            <div class="section-head">
-              <div>
-                <h2>剪贴板历史</h2>
-                <p>最近通过剪贴板发送的文字、链接和截图会显示在这里。</p>
-              </div>
-              <button id="clearClipboardHistory" type="button" class="ghost">清空历史</button>
-            </div>
-            <div id="clipboardHistory" class="clipboard-history"></div>
-          </section>
-        </section>
-
         <section class="view" id="devicesView" data-view hidden>
           <section class="panel network-card settings-like-card">
             <p class="eyebrow">当前网络</p>
@@ -179,7 +183,10 @@
                 <h2>已连接设备</h2>
                 <p>显示通过访问码进入过的手机、浏览器和最后访问时间。</p>
               </div>
-              <button id="refreshDevices" type="button" class="ghost">刷新</button>
+              <div class="device-toolbar">
+                <button id="refreshDevices" type="button" class="ghost">刷新</button>
+                <button id="clearOfflineDevices" type="button" class="ghost">清理离线记录</button>
+              </div>
             </div>
             <div id="devicesList" class="devices-list"></div>
           </section>
@@ -190,7 +197,7 @@
             <div class="section-head">
               <div>
                 <h2>通用设置</h2>
-                <p>先放日常最常用的设置，后面再逐步补全。</p>
+                <p>发布版先保留最常用的设置，高级功能收在下面。</p>
               </div>
             </div>
             <div class="settings-list">
@@ -204,14 +211,21 @@
               <label class="setting-row">
                 <span>
                   <strong>剪贴板实时监听</strong>
-                  <em>复制文字或链接后自动进入剪贴板历史</em>
+                  <em>仅电脑端生效：复制文字或链接后自动进入剪贴板历史</em>
                 </span>
                 <input id="settingClipboardSync" type="checkbox" />
               </label>
               <label class="setting-row">
                 <span>
+                  <strong>安全模式</strong>
+                  <em>公共 Wi-Fi 或陌生网络建议开启：使用 6 位访问码、缩短登录有效期，并隔离危险文件。</em>
+                </span>
+                <input id="securityModeSetting" type="checkbox" />
+              </label>
+              <label class="setting-row">
+                <span>
                   <strong>访问码长度</strong>
-                  <em>4 位更适合小白输入，6 位更稳妥；修改后旧访问码会失效。</em>
+                  <em>访问码用于防止同 Wi-Fi 下陌生人打开你的电脑。4 位好输入，6 位更稳妥；修改后旧访问码会失效。</em>
                 </span>
                 <select id="accessLengthSetting">
                   <option value="4">4 位数字</option>
@@ -231,11 +245,48 @@
             </div>
           </section>
 
+          <section class="panel advanced-panel">
+            <details>
+              <summary>高级功能</summary>
+              <p>这些功能不影响日常互传，需要时再打开。</p>
+              <div class="advanced-actions">
+                <button id="openDevicesView" type="button" class="secondary">设备管理</button>
+                <a class="button-link secondary" href="/yaoji/">打开钥记</a>
+              </div>
+            </details>
+          </section>
+
+          <section class="panel backup-panel" id="backupPanel">
+            <div class="section-head">
+              <div>
+                <h2>数据备份</h2>
+                <p>备份随记、随记图片、钥记加密文件、设置和访问码；不包含互传的大文件本体。</p>
+              </div>
+            </div>
+            <div class="backup-actions">
+              <button id="createLocalBackup" type="button">立即备份到本机</button>
+              <button id="openBackupPath" type="button" class="secondary">打开本地备份目录</button>
+              <button id="exportBackup" type="button">导出备份</button>
+              <label class="file-button secondary">
+                导入备份
+                <input id="importBackupInput" type="file" accept="application/json,.json" />
+              </label>
+            </div>
+            <div class="local-backups">
+              <div class="local-backups-head">
+                <strong>本机恢复点</strong>
+                <span id="localBackupSummary">正在读取...</span>
+              </div>
+              <div id="localBackupList" class="local-backup-list"></div>
+            </div>
+            <p class="backup-tip">钥记主密码不会被备份；忘记主密码仍然无法恢复钥记内容。</p>
+          </section>
+
           <section class="panel update-panel" id="updatePanel" hidden>
             <div class="section-head">
               <div>
                 <h2>软件更新</h2>
-                <p id="updateSummary">在软件里检查最新版，不用去 GitHub 页面里找安装包。</p>
+                <p id="updateSummary">软件会自动检查更新，并按当前系统推荐安装包。</p>
               </div>
               <button id="checkUpdate" type="button" class="ghost">检查更新</button>
             </div>
@@ -254,6 +305,31 @@
       </section>
     </main>
 
+    <dialog id="imagePreviewDialog" class="image-preview-dialog">
+      <div class="image-preview-head">
+        <strong id="imagePreviewTitle">图片预览</strong>
+        <button id="closeImagePreview" type="button" class="ghost">关闭</button>
+      </div>
+      <div class="image-preview-body">
+        <img id="imagePreviewImage" alt="图片预览" />
+      </div>
+      <div class="image-preview-actions">
+        <button id="copyPreviewImage" type="button">复制图片</button>
+        <button id="openPreviewImage" type="button" class="secondary">用系统打开</button>
+      </div>
+    </dialog>
+
+    <dialog id="qrPreviewDialog" class="qr-preview-dialog">
+      <div class="image-preview-head">
+        <strong>手机访问二维码</strong>
+        <button id="closeQrPreview" type="button" class="ghost">关闭</button>
+      </div>
+      <div class="qr-preview-body">
+        <img id="qrPreviewImage" alt="放大的手机访问二维码" />
+        <p id="qrPreviewUrl"></p>
+      </div>
+    </dialog>
+
     <template id="itemTemplate">
       <article class="item">
         <div class="preview"></div>
@@ -267,12 +343,13 @@
           <div class="item-actions">
             <a>打开</a>
             <button type="button" class="copy-text" hidden>复制</button>
+            <button type="button" class="save-note ghost">存随记</button>
             <button type="button" class="danger delete-item">删除</button>
           </div>
         </div>
       </article>
     </template>
-    <script src="/access.js?v=2026060103"></script>
-    <script src="/app.js?v=2026060109"></script>
+    <script src="/access.js?v=2026061101"></script>
+    <script src="/app.js?v=2026060903"></script>
   </body>
 </html>
