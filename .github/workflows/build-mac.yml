@@ -1,12 +1,22 @@
-name: Build Mac
+name: Build macOS Test Packages
 
 on:
   workflow_dispatch:
 
 jobs:
   build-mac:
-    name: Build macOS package
+    name: Build macOS ${{ matrix.arch }}
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            command: npx electron-builder --mac dmg zip --arm64 --publish never
+            artifact: mac-arm64
+          - arch: x64
+            command: npx electron-builder --mac dmg zip --x64 --publish never
+            artifact: mac-x64
 
     steps:
       - name: Checkout source
@@ -22,16 +32,15 @@ jobs:
         run: npm ci
 
       - name: Build macOS app
-        run: npm run dist:mac -- --publish never
+        run: ${{ matrix.command }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
       - name: Upload macOS package
         uses: actions/upload-artifact@v4
         with:
-          name: lan-drop-mac
+          name: lan-drop-${{ matrix.artifact }}
           path: |
             release/*.dmg
-            release/*mac*.zip
             release/*.zip
           if-no-files-found: error

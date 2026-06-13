@@ -23,6 +23,29 @@ jobs:
             artifact: windows
             files: |
               release/*.exe
+              release/*.blockmap
+              release/latest.yml
+          - name: macOS Apple Silicon
+            os: macos-latest
+            command: npx electron-builder --mac dmg zip --arm64 --publish never
+            artifact: mac-arm64
+            files: |
+              release/*mac-arm64*.dmg
+              release/*mac-arm64*.zip
+          - name: macOS Intel
+            os: macos-latest
+            command: npx electron-builder --mac dmg zip --x64 --publish never
+            artifact: mac-x64
+            files: |
+              release/*mac-x64*.dmg
+              release/*mac-x64*.zip
+          - name: Linux
+            os: ubuntu-latest
+            command: npm run dist:linux -- --publish never
+            artifact: linux
+            files: |
+              release/*.AppImage
+              release/*.deb
 
     steps:
       - name: Checkout source
@@ -69,18 +92,22 @@ jobs:
           body: |
             闪传本子 / LAN Drop ${{ github.ref_name }}
 
-            这是一个早期测试版，适合 Windows 用户和小范围朋友试用。
+            这是一个早期测试版，适合小范围朋友试用和反馈。
 
-            下载：
-            - Windows：.exe 安装包
-            - macOS / Linux：仍在实验构建中，后续补发
+            下载建议：
+            - Windows：下载 `LAN-Drop-*-win-x64.exe`
+            - macOS 苹果芯片 M1/M2/M3/M4：下载 `LAN-Drop-*-mac-arm64.dmg`
+            - macOS Intel 芯片：下载 `LAN-Drop-*-mac-x64.dmg`
+            - Linux：优先下载 `LAN-Drop-*-linux-x64.AppImage`，Debian/Ubuntu 也可以下载 `.deb`
 
             亮点：
-            - 手机不用安装 App，电脑打开软件后，手机扫码或打开地址即可互传。
-            - 电脑复制文件、图片或截图后，在互传页按 Ctrl + V 可以直接发送。
-            - 支持文字、图片、文件互传，也可以把重要内容存入随记。
+            - 手机不需要安装 App，电脑打开软件后，手机扫码或打开地址即可互传。
+            - 支持文件、图片、文字互传。
+            - 电脑复制文件、图片或截图后，在互传页按 `Ctrl + V` 可以直接发送。
+            - 重要文字和图片可以存入随记。
 
             注意：
             - 请让手机和电脑连接同一个可信 Wi-Fi 或热点。
-            - macOS / Linux 包暂未包含在本次 Release，后续会继续调试云端构建。
+            - macOS 包目前没有苹果签名/公证，首次打开可能需要右键点击应用并选择“打开”。
+            - Linux 包属于实验测试版，不同发行版表现可能不同。
           files: release-artifacts/**/*
