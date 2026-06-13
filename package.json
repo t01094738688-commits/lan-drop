@@ -43,6 +43,7 @@
       "include": "installer/installer.nsh"
     },
     "mac": {
+      "icon": "build/icon.icns",
       "target": [
         "dmg",
         "zip"
@@ -51,6 +52,7 @@
     },
     "linux": {
       "icon": "build/icon.png",
+      "maintainer": "t01094738688-commits <t01094738688-commits@users.noreply.github.com>",
       "target": [
         "AppImage",
         "deb"
