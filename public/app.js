@@ -79,9 +79,10 @@ const closeQrPreview = document.querySelector("#closeQrPreview");
 
 function revealYaojiNav() {
   if (yaojiNavLink) yaojiNavLink.hidden = false;
+  localStorage.setItem("lanDrop.yaojiVisible", "true");
 }
 
-if (sessionStorage.getItem("lanDrop.yaojiOpen") === "true") {
+if (localStorage.getItem("lanDrop.yaojiVisible") === "true" || sessionStorage.getItem("lanDrop.yaojiOpen") === "true") {
   revealYaojiNav();
 }
 
@@ -948,6 +949,7 @@ openDevicesView?.addEventListener("click", () => {
 for (const link of document.querySelectorAll('a[href="/yaoji/"]')) {
   link.addEventListener("click", () => {
     sessionStorage.setItem("lanDrop.yaojiOpen", "true");
+    localStorage.setItem("lanDrop.yaojiVisible", "true");
     revealYaojiNav();
   });
 }

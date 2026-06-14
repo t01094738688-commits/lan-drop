@@ -1,6 +1,6 @@
 {
   "name": "shanchuan-ben",
-  "version": "0.1.38",
+  "version": "0.1.39",
   "private": true,
   "description": "Local LAN file, image, text transfer and quick notes between phone and computer.",
   "main": "desktop/main.js",
@@ -40,6 +40,10 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "闪传本子",
+      "runAfterFinish": true,
       "include": "installer/installer.nsh"
     },
     "mac": {

@@ -358,7 +358,9 @@ async function launchUpdateInstaller(filePath) {
 
   let command = resolved;
   let args = [];
-  if (process.platform === "darwin") {
+  if (process.platform === "win32" && /\.exe$/i.test(resolved)) {
+    args = ["/S"];
+  } else if (process.platform === "darwin") {
     command = "open";
     args = [resolved];
   } else if (process.platform === "linux") {

@@ -1,4 +1,5 @@
 ﻿sessionStorage.setItem("lanDrop.yaojiOpen", "true");
+localStorage.setItem("lanDrop.yaojiVisible", "true");
 const storageKey = "yaoji.encrypted.v3";
 const oldStorageKey = "yaoji.encrypted.v2";
 const sessionPasswordKey = "yaoji.session.password";
