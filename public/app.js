@@ -65,6 +65,7 @@ const settingsInboxPath = document.querySelector("#settingsInboxPath");
 const copyInboxPath = document.querySelector("#copyInboxPath");
 const openInboxPath = document.querySelector("#openInboxPath");
 const openDevicesView = document.querySelector("#openDevicesView");
+const yaojiNavLink = document.querySelector("#yaojiNavLink");
 const imagePreviewDialog = document.querySelector("#imagePreviewDialog");
 const imagePreviewTitle = document.querySelector("#imagePreviewTitle");
 const imagePreviewImage = document.querySelector("#imagePreviewImage");
@@ -76,6 +77,14 @@ const qrPreviewImage = document.querySelector("#qrPreviewImage");
 const qrPreviewUrl = document.querySelector("#qrPreviewUrl");
 const closeQrPreview = document.querySelector("#closeQrPreview");
 
+function revealYaojiNav() {
+  if (yaojiNavLink) yaojiNavLink.hidden = false;
+}
+
+if (sessionStorage.getItem("lanDrop.yaojiOpen") === "true") {
+  revealYaojiNav();
+}
+
 let items = [];
 let phoneUrl = location.href;
 let phoneUrls = [];
@@ -86,6 +95,7 @@ let devices = [];
 let appVersion = "";
 let inboxDirectory = "";
 let clipboardPollTimer = null;
+let updatePollTimer = null;
 let lastAutoClipboardText = "";
 let lastClipboardPreview = null;
 let activePreviewItem = null;
@@ -810,11 +820,9 @@ function renderUpdateResult(data) {
     if (recommendedAsset) {
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = updateDownloadLabel(recommendedAsset, platformName);
+      button.textContent = `下载并安装 ${platformName} 版${recommendedAsset.size ? ` · ${formatSize(recommendedAsset.size)}` : ""}`;
       button.title = recommendedAsset.name || "";
-      button.addEventListener("click", () => {
-        window.open(recommendedAsset.browserDownloadUrl, "_blank", "noopener");
-      });
+      button.addEventListener("click", () => installUpdate(recommendedAsset, button));
       updateActions.append(button);
     }
   } else {
@@ -835,6 +843,80 @@ function renderUpdateResult(data) {
     copyLink.textContent = "复制下载页";
     copyLink.addEventListener("click", () => copyText(data.htmlUrl, copyLink));
     updateActions.append(copyLink);
+  }
+}
+
+function renderUpdateProgress(state = {}) {
+  if (!updateSummary) return;
+  const total = Number(state.totalBytes || 0);
+  const received = Number(state.receivedBytes || 0);
+  const progress = total > 0 ? `已下载 ${formatSize(received)} / ${formatSize(total)}` : `已下载 ${formatSize(received)}`;
+  if (state.status === "downloading") {
+    updateSummary.textContent = `${state.message || "正在下载更新包..."} ${progress}。下载完成后会自动打开安装包并退出旧版。`;
+  } else if (state.status === "installing") {
+    updateSummary.textContent = "下载完成，正在打开安装包。旧版会自动退出，请按安装器提示覆盖安装。";
+  } else if (state.status === "error") {
+    updateSummary.textContent = `更新失败：${state.error || state.message || "未知错误"}。可以稍后重试，或打开下载页手动下载。`;
+  }
+}
+
+async function pollUpdateStatus(button) {
+  clearInterval(updatePollTimer);
+  updatePollTimer = setInterval(async () => {
+    try {
+      const response = await fetch("/api/update/status");
+      const state = await response.json();
+      if (!response.ok) throw new Error(state.error || "读取更新状态失败");
+      renderUpdateProgress(state);
+      if (button && state.status === "downloading") {
+        const total = Number(state.totalBytes || 0);
+        const received = Number(state.receivedBytes || 0);
+        const percent = total > 0 ? Math.max(1, Math.min(99, Math.round((received / total) * 100))) : "";
+        button.textContent = percent ? `下载中 ${percent}%` : "下载中...";
+        button.disabled = true;
+      }
+      if (["installing", "error", "idle"].includes(state.status)) {
+        clearInterval(updatePollTimer);
+        updatePollTimer = null;
+        if (button && state.status === "error") {
+          button.disabled = false;
+          button.textContent = "重新下载并安装";
+        }
+      }
+    } catch (error) {
+      clearInterval(updatePollTimer);
+      updatePollTimer = null;
+      if (button) button.disabled = false;
+      showStatus(error.message, "error");
+    }
+  }, 1000);
+}
+
+async function installUpdate(asset, button) {
+  if (!asset?.browserDownloadUrl) {
+    showStatus("没有找到适合当前系统的安装包", "error");
+    return;
+  }
+  const confirmed = confirm("开始下载新版安装包。下载完成后会自动打开安装包，并退出当前旧版。继续吗？");
+  if (!confirmed) return;
+  button.disabled = true;
+  button.textContent = "准备下载...";
+  updateSummary.textContent = "正在准备下载更新包...";
+  try {
+    const response = await fetch("/api/update/install", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asset })
+    });
+    const state = await response.json();
+    if (!response.ok) throw new Error(state.error || "无法开始更新");
+    renderUpdateProgress(state);
+    pollUpdateStatus(button);
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = "重新下载并安装";
+    updateSummary.textContent = `更新失败：${error.message}`;
+    showStatus("更新失败", "error");
   }
 }
 
@@ -862,6 +944,13 @@ openDevicesView?.addEventListener("click", () => {
   showView("devicesView");
   resetWorkspaceScroll();
 });
+
+for (const link of document.querySelectorAll('a[href="/yaoji/"]')) {
+  link.addEventListener("click", () => {
+    sessionStorage.setItem("lanDrop.yaojiOpen", "true");
+    revealYaojiNav();
+  });
+}
 
 clipboardSyncToggle?.addEventListener("change", () => {
   setClipboardSync(clipboardSyncToggle.checked);

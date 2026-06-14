@@ -32,6 +32,7 @@ const DEVICES_FILE = path.join(DATA_DIR, "devices.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 const NOTES_DIR = path.join(DATA_DIR, "notes");
 const BACKUP_DIR = path.join(INBOX_DIR, "backups");
+const UPDATES_DIR = path.join(INBOX_DIR, "updates");
 const BACKUP_STATE_FILE = path.join(DATA_DIR, "backup-state.json");
 const MAX_BODY_BYTES = 200 * 1024 * 1024;
 const MAX_ITEMS = 1000;
@@ -50,6 +51,7 @@ fs.mkdirSync(INBOX_DIR, { recursive: true });
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(NOTES_DIR, { recursive: true });
 fs.mkdirSync(BACKUP_DIR, { recursive: true });
+fs.mkdirSync(UPDATES_DIR, { recursive: true });
 
 const legacyInboxDir = path.join(ROOT, "inbox");
 if (path.resolve(INBOX_DIR) !== path.resolve(legacyInboxDir) && fs.existsSync(legacyInboxDir)) {
@@ -252,6 +254,176 @@ function requestJson(url) {
     request.on("timeout", () => request.destroy(new Error("Request timed out")));
     request.on("error", reject);
   });
+}
+
+const updateDownloadState = {
+  active: false,
+  status: "idle",
+  message: "",
+  filename: "",
+  filePath: "",
+  receivedBytes: 0,
+  totalBytes: 0,
+  error: "",
+  startedAt: null,
+  completedAt: null
+};
+
+function publicUpdateState() {
+  return {
+    active: updateDownloadState.active,
+    status: updateDownloadState.status,
+    message: updateDownloadState.message,
+    filename: updateDownloadState.filename,
+    filePath: updateDownloadState.filePath,
+    receivedBytes: updateDownloadState.receivedBytes,
+    totalBytes: updateDownloadState.totalBytes,
+    error: updateDownloadState.error,
+    startedAt: updateDownloadState.startedAt,
+    completedAt: updateDownloadState.completedAt
+  };
+}
+
+function isAllowedUpdateHost(hostname) {
+  return [
+    "github.com",
+    "objects.githubusercontent.com",
+    "release-assets.githubusercontent.com"
+  ].includes(String(hostname || "").toLowerCase());
+}
+
+function downloadFile(url, destination, redirects = 0) {
+  return new Promise((resolve, reject) => {
+    if (redirects > 5) {
+      reject(new Error("Too many redirects while downloading update."));
+      return;
+    }
+
+    const parsed = new URL(url);
+    if (!isAllowedUpdateHost(parsed.hostname)) {
+      reject(new Error("Update download host is not allowed."));
+      return;
+    }
+
+    const request = https.get(
+      parsed,
+      {
+        headers: {
+          "User-Agent": `LAN-Drop/${APP_VERSION}`,
+          "Accept": "application/octet-stream"
+        },
+        timeout: 30000
+      },
+      (response) => {
+        if ([301, 302, 303, 307, 308].includes(response.statusCode)) {
+          const nextUrl = response.headers.location;
+          response.resume();
+          if (!nextUrl) {
+            reject(new Error("Update download redirected without a location."));
+            return;
+          }
+          downloadFile(new URL(nextUrl, parsed).toString(), destination, redirects + 1).then(resolve, reject);
+          return;
+        }
+
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          response.resume();
+          reject(new Error(`Download failed with HTTP ${response.statusCode}.`));
+          return;
+        }
+
+        const total = Number(response.headers["content-length"] || 0);
+        updateDownloadState.totalBytes = total;
+        updateDownloadState.receivedBytes = 0;
+        const writer = fs.createWriteStream(destination);
+
+        response.on("data", (chunk) => {
+          updateDownloadState.receivedBytes += chunk.length;
+        });
+        response.pipe(writer);
+        writer.on("finish", () => writer.close(resolve));
+        writer.on("error", reject);
+      }
+    );
+
+    request.on("timeout", () => request.destroy(new Error("Download timed out.")));
+    request.on("error", reject);
+  });
+}
+
+async function launchUpdateInstaller(filePath) {
+  const resolved = path.resolve(filePath);
+  if (!isInside(UPDATES_DIR, resolved)) throw new Error("Invalid update path.");
+  if (!fs.existsSync(resolved)) throw new Error("Downloaded installer was not found.");
+
+  let command = resolved;
+  let args = [];
+  if (process.platform === "darwin") {
+    command = "open";
+    args = [resolved];
+  } else if (process.platform === "linux") {
+    if (/\.AppImage$/i.test(resolved)) {
+      fs.chmodSync(resolved, 0o755);
+    } else {
+      command = "xdg-open";
+      args = [resolved];
+    }
+  }
+
+  const child = childProcess.spawn(command, args, {
+    detached: true,
+    stdio: "ignore",
+    windowsHide: false
+  });
+  child.unref();
+
+  setTimeout(() => {
+    process.exit(0);
+  }, 800);
+}
+
+async function startUpdateDownload(asset = {}) {
+  if (updateDownloadState.active) return publicUpdateState();
+  const url = String(asset.browserDownloadUrl || asset.url || "").trim();
+  if (!url) throw new Error("Missing update download URL.");
+  const assetName = safeFileName(String(asset.name || path.basename(new URL(url).pathname) || "LAN-Drop-update.exe"));
+  if (!/\.(exe|dmg|zip|AppImage|deb)$/i.test(assetName)) {
+    throw new Error("Unsupported update package type.");
+  }
+
+  const target = path.join(UPDATES_DIR, assetName);
+  Object.assign(updateDownloadState, {
+    active: true,
+    status: "downloading",
+    message: "正在下载更新包...",
+    filename: assetName,
+    filePath: target,
+    receivedBytes: 0,
+    totalBytes: Number(asset.size || 0),
+    error: "",
+    startedAt: new Date().toISOString(),
+    completedAt: null
+  });
+
+  fs.mkdirSync(UPDATES_DIR, { recursive: true });
+  if (fs.existsSync(target)) fs.unlinkSync(target);
+
+  downloadFile(url, target)
+    .then(() => {
+      updateDownloadState.status = "installing";
+      updateDownloadState.message = "下载完成，正在打开安装包...";
+      updateDownloadState.completedAt = new Date().toISOString();
+      return launchUpdateInstaller(target);
+    })
+    .catch((error) => {
+      updateDownloadState.status = "error";
+      updateDownloadState.message = "更新下载失败";
+      updateDownloadState.error = error.message;
+      updateDownloadState.completedAt = new Date().toISOString();
+      updateDownloadState.active = false;
+    });
+
+  return publicUpdateState();
 }
 
 function parseVersion(value = "") {
@@ -1946,6 +2118,29 @@ function createServer() {
           currentVersion: APP_VERSION,
           releasesUrl: "https://github.com/t01094738688-commits/lan-drop/releases"
         });
+      }
+      return;
+    }
+
+    if (req.method === "GET" && route === "/api/update/status") {
+      if (!isLocalRequest(req)) {
+        json(res, 403, { error: "Updates can only be managed from this computer." });
+        return;
+      }
+      json(res, 200, publicUpdateState());
+      return;
+    }
+
+    if (req.method === "POST" && route === "/api/update/install") {
+      if (!isLocalRequest(req)) {
+        json(res, 403, { error: "Updates can only be installed from this computer." });
+        return;
+      }
+      try {
+        const payload = JSON.parse(await readBody(req) || "{}");
+        json(res, 202, await startUpdateDownload(payload.asset || payload));
+      } catch (error) {
+        json(res, 400, { error: error.message || "Unable to start update." });
       }
       return;
     }
